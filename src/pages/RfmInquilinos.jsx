@@ -2,9 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
-import { 
+import {
+  BarChart as ReBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Cell,
+  LabelList,
+  Tooltip,
+} from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '../components/ChartContainer';
+import {
   BarChart3, PieChart, Users, Coins, Tag, Calendar, 
-  RefreshCw, Search, Download, Globe, LineChart 
+  RefreshCw, Search, Download, Globe, LineChart, LayoutDashboard
 } from 'lucide-react';
 import './RfmInquilinos.css';
 
@@ -36,7 +51,7 @@ const ValueLabels = ({ bars }) => {
         dy="0.35em"
         textAnchor={textAnchor}
         fill={fill}
-        fontSize="10px"
+        fontSize="14px"
         fontWeight="600"
       >
         {labelText}
@@ -45,84 +60,42 @@ const ValueLabels = ({ bars }) => {
   });
 };
 
-const RecenciaLabels = ({ bars }) => {
-  return bars.map(bar => {
-    const value = bar.data.value;
-    if (value === undefined || value === null) return null;
-    return (
-      <text
-        key={bar.key}
-        x={bar.x + bar.width / 2}
-        y={bar.y - 8}
-        textAnchor="middle"
-        fill="#ffffff"
-        fontSize="10px"
-        fontWeight="600"
-      >
-        {Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-      </text>
-    );
-  });
+
+
+// ── Compact Number Formatter ──────────────────────────────────────────────────
+const formatCompacto = (value, isMonetary = false) => {
+  if (value === undefined || value === null) return '';
+  const num = Number(value);
+  if (num >= 1000000) {
+    const format = (num / 1000000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return isMonetary ? `R$ ${format} MI` : `${format} MI`;
+  }
+  if (num >= 1000) {
+    const format = (num / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return isMonetary ? `R$ ${format} MIL` : `${format} MIL`;
+  }
+  return isMonetary 
+    ? `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+    : num.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
 };
 
-const FrequenciaLabels = ({ bars }) => {
-  return bars.map(bar => {
-    const value = bar.data.value;
-    if (value === undefined || value === null) return null;
-    return (
-      <text
-        key={bar.key}
-        x={bar.x + bar.width / 2}
-        y={bar.y - 8}
-        textAnchor="middle"
-        fill="#ffffff"
-        fontSize="10px"
-        fontWeight="600"
-      >
-        {Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-      </text>
-    );
-  });
-};
-
-const TicketLabels = ({ bars }) => {
-  return bars.map(bar => {
-    const value = bar.data.value;
-    if (value === undefined || value === null) return null;
-    return (
-      <text
-        key={bar.key}
-        x={bar.x + bar.width / 2}
-        y={bar.y - 8}
-        textAnchor="middle"
-        fill="#ffffff"
-        fontSize="10px"
-        fontWeight="600"
-      >
-        {`R$ ${Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`}
-      </text>
-    );
-  });
-};
-
-const FaturamentoLabels = ({ bars }) => {
-  return bars.map(bar => {
-    const value = bar.data.value;
-    if (value === undefined || value === null) return null;
-    return (
-      <text
-        key={bar.key}
-        x={bar.x + bar.width / 2}
-        y={bar.y - 8}
-        textAnchor="middle"
-        fill="#ffffff"
-        fontSize="10px"
-        fontWeight="600"
-      >
-        {`R$ ${Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`}
-      </text>
-    );
-  });
+// ── Recharts custom label for bar tops ──────────────────────────────────────
+const BarTopLabel = ({ x, y, width, value, formatter, payload, activeSegment }) => {
+  if (value === undefined || value === null || value === 0) return null;
+  if (activeSegment && payload && getLetter(payload.id) !== activeSegment) return null;
+  const display = formatter ? formatter(value) : Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 6}
+      textAnchor="middle"
+      fill="#ffffff"
+      fontSize={14}
+      fontWeight={600}
+    >
+      {display}
+    </text>
+  );
 };
 
 export const RfmInquilinos = () => {
@@ -133,6 +106,7 @@ export const RfmInquilinos = () => {
   const [activeTab, setActiveTab] = useState('geral');
   const [grupoSelecionado, setGrupoSelecionado] = useState('');
   const [chartType, setChartType] = useState('bar');
+  const [segmentoAtivo, setSegmentoAtivo] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -251,7 +225,7 @@ export const RfmInquilinos = () => {
               keys={['value']}
               indexBy="id"
               layout="horizontal"
-              margin={{ top: 20, right: 80, bottom: 50, left: 140 }}
+              margin={{ top: 20, right: 80, bottom: 20, left: 140 }}
               padding={0.35}
               colors="#7000ff"
               enableLabel={false}
@@ -260,22 +234,16 @@ export const RfmInquilinos = () => {
                 tickSize: 0,
                 tickPadding: 10,
               }}
-              axisBottom={{
-                tickSize: 0,
-                tickPadding: 8,
-                legend: 'Quantidade de Clientes',
-                legendPosition: 'middle',
-                legendOffset: 38
-              }}
-              enableGridX={true}
+              axisBottom={null}
+              enableGridX={false}
               enableGridY={false}
               theme={{
                 axis: {
-                  ticks: { text: { fill: '#cccccc', fontSize: 11 } },
-                  legend: { text: { fill: '#aaaaaa', fontSize: 12, fontWeight: 500 } }
+                  ticks: { text: { fill: '#cccccc', fontSize: 14 } },
+                  legend: { text: { fill: '#aaaaaa', fontSize: 16, fontWeight: 500 } }
                 },
                 grid: { line: { stroke: 'rgba(255, 255, 255, 0.05)', strokeWidth: 1 } },
-                labels: { text: { fontSize: 10, fontWeight: 600, fill: '#ffffff' } },
+                labels: { text: { fontSize: 14, fontWeight: 600, fill: '#ffffff' } },
                 tooltip: { container: { background: '#111', color: '#f0f0f0', borderRadius: '6px' } }
               }}
               tooltip={({ id, value, color, data }) => (
@@ -290,21 +258,50 @@ export const RfmInquilinos = () => {
           ) : (
             <ResponsivePie
               data={chartData}
-              margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+              margin={{ top: 20, right: 20, bottom: 80, left: 20 }}
               innerRadius={0.5}
               padAngle={0.7}
               cornerRadius={3}
               activeOuterRadiusOffset={8}
-              colors={{ scheme: 'category10' }}
+              colors={[
+                '#10b981', '#34d399', '#6ee7b7', '#38bdf8', '#818cf8', 
+                '#a78bfa', '#c084fc', '#e879f9', '#f472b6', '#fb7185', '#ef4444'
+              ]}
               borderWidth={1}
               borderColor={{ from: 'color', modifiers: [ [ 'darker', 0.2 ] ] }}
-              arcLinkLabelsSkipAngle={10}
-              arcLinkLabelsTextColor="var(--text-primary)"
-              arcLinkLabelsThickness={2}
-              arcLinkLabelsColor={{ from: 'color' }}
+              enableArcLinkLabels={false}
               arcLabelsSkipAngle={10}
-              arcLabelsTextColor={{ from: 'color', modifiers: [ [ 'darker', 2 ] ] }}
-              valueFormat={value => `${value} clientes`}
+              arcLabelsTextColor="#ffffff"
+              valueFormat={value => `${value}`}
+              theme={{
+                labels: { text: { fontSize: 16, fontWeight: 'bold' } },
+                legends: { text: { fill: '#ffffff', fontSize: 12 } }
+              }}
+              legends={[
+                {
+                  anchor: 'bottom',
+                  direction: 'row',
+                  justify: false,
+                  translateX: 0,
+                  translateY: 56,
+                  itemsSpacing: 0,
+                  itemWidth: 100,
+                  itemHeight: 18,
+                  itemTextColor: '#999',
+                  itemDirection: 'left-to-right',
+                  itemOpacity: 1,
+                  symbolSize: 18,
+                  symbolShape: 'circle',
+                  effects: [
+                    {
+                      on: 'hover',
+                      style: {
+                        itemTextColor: '#fff'
+                      }
+                    }
+                  ]
+                }
+              ]}
               tooltip={({ datum: { id, value, color, data } }) => (
                 <div className="chart-tooltip" style={{ borderColor: color }}>
                   <strong>Segmento: {id}</strong>
@@ -324,164 +321,319 @@ export const RfmInquilinos = () => {
     // Sort array alphabetically by segment name
     const sortedData = [...resumoArray].sort((a, b) => a.id.localeCompare(b.id));
 
+    const estrategias = {
+      'A': 'Recompense-os. Podem ser early adopters de novos produtos e promoverão a marca.',
+      'B': 'Ofereça produtos de maior valor. Peça por reviews e faça o possível para engajá-los.',
+      'C': 'Ofereça programas de membros ou de lealdade, além de recomendar outros produtos.',
+      'D': 'Dê todo o suporte no onboarding para acelerar o sucesso. Comece a construir um relacionamento.',
+      'E': 'Crie awareness para a sua marca e ofereça testes ou avaliações gratuitas.',
+      'F': 'Ofereça ofertas por tempo limitado baseadas em compras anteriores para reativá-los.',
+      'G': 'Compartilhe recursos valiosos.',
+      'H': 'Converse diretamente e ofereça benefícios premium para retenção.',
+      'I': 'Envie ofertas agressivas e personalizadas para tentar recuperá-los.',
+      'J': 'Crie campanhas de reativação padrão com foco em novidades.',
+      'K': 'Avalie se vale o custo de aquisição para trazê-los de volta.'
+    };
+
     return (
-      <div className="tab-content animate-fade-in">
+      <div className="tab-content animate-fade-in" style={{ marginTop: '32px' }}>
         <h3><BarChart3 size={20} /> Análise Comparativa por Segmento</h3>
-        <p className="tab-desc">Métricas médias e totais detalhadas por comportamento de grupo.</p>
+        <p className="tab-desc">Métricas médias e totais detalhadas por comportamento de grupo. Clique nos segmentos da legenda para focar as barras nos gráficos.</p>
 
         <div className="rfm-legend-container glass-panel">
-          <div className="rfm-legend-title"><Tag size={16} /> Legenda de Segmentos</div>
+          <div className="rfm-legend-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span><Tag size={16} /> Legenda de Segmentos</span>
+            {segmentoAtivo && (
+              <button 
+                onClick={() => setSegmentoAtivo(null)}
+                style={{
+                  background: 'rgba(112,0,255,0.15)',
+                  border: '1px solid rgba(112,0,255,0.3)',
+                  color: '#b080ff',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Limpar Filtro
+              </button>
+            )}
+          </div>
           {[
-            { key: 'A', name: 'Campeões' },
-            { key: 'B', name: 'Clientes Fiéis' },
-            { key: 'C', name: 'Fiéis em Potencial' },
-            { key: 'D', name: 'Novos Clientes' },
-            { key: 'E', name: 'Clientes Promissores' },
-            { key: 'F', name: 'Precisam de Atenção' },
-            { key: 'G', name: 'Quase Dormentes' },
-            { key: 'H', name: 'Não podemos perder' },
-            { key: 'I', name: 'Clientes em risco' },
-            { key: 'J', name: 'Clientes hibernando' },
-            { key: 'K', name: 'Clientes perdidos' }
-          ].map(item => (
-            <div key={item.key} className="rfm-legend-item">
-              <span className="rfm-legend-badge">{item.key}</span>
-              <span className="rfm-legend-name">{item.name}</span>
-            </div>
-          ))}
+            { key: 'A', name: 'Campeões', color: '#2ca02c' },
+            { key: 'B', name: 'Clientes Fiéis', color: '#1f77b4' },
+            { key: 'C', name: 'Fiéis em Potencial', color: '#7ab8ff' },
+            { key: 'D', name: 'Novos Clientes', color: '#ffbb78' },
+            { key: 'E', name: 'Clientes Promissores', color: '#98df8a' },
+            { key: 'F', name: 'Precisam de Atenção', color: '#ff7f0e' },
+            { key: 'G', name: 'Quase Dormentes', color: '#ff9896' },
+            { key: 'H', name: 'Não podemos perder', color: '#d62728' },
+            { key: 'I', name: 'Clientes em risco', color: '#e377c2' },
+            { key: 'J', name: 'Clientes hibernando', color: '#c5b0d5' },
+            { key: 'K', name: 'Clientes perdidos', color: '#7f7f7f' }
+          ].map(item => {
+            const isCurrentActive = segmentoAtivo === item.key;
+            const isDimmed = segmentoAtivo !== null && segmentoAtivo !== item.key;
+            return (
+              <div 
+                key={item.key} 
+                className="rfm-legend-item" 
+                onClick={() => setSegmentoAtivo(isCurrentActive ? null : item.key)}
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'flex-start', 
+                  padding: '12px', 
+                  background: isCurrentActive ? 'rgba(112,0,255,0.1)' : 'rgba(255,255,255,0.03)', 
+                  borderRadius: '8px', 
+                  marginBottom: '8px', 
+                  borderLeft: `4px solid ${isCurrentActive ? '#00f0ff' : item.color}`,
+                  boxShadow: isCurrentActive ? '0 0 15px rgba(0,240,255,0.15)' : 'none',
+                  opacity: isDimmed ? 0.35 : 1,
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span className="rfm-legend-badge" style={{ fontSize: '14px', fontWeight: 'bold', color: item.color }}>{item.key}</span>
+                  <span className="rfm-legend-name" style={{ fontSize: '15px', fontWeight: isCurrentActive ? 'bold' : 'normal', color: isCurrentActive ? '#ffffff' : 'var(--text-primary)' }}>{item.name}</span>
+                </div>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{estrategias[item.key]}</span>
+              </div>
+            );
+          })}
         </div>
 
         <div className="charts-grid">
+          {/* ── Recência Média ── */}
           <div className="chart-wrapper glass-panel">
             <h4><Calendar size={18} /> Recência Média (dias)</h4>
-            <div className="bar-chart-container">
-              <ResponsiveBar
+            <ChartContainer
+              className="bar-chart-container"
+              config={{ recenciaMedia: { label: 'Recência Média', color: '#1f77b4' } }}
+            >
+              <ReBarChart
                 data={sortedData}
-                keys={['recenciaMedia']}
-                indexBy="id"
                 margin={{ top: 30, right: 20, bottom: 50, left: 20 }}
-                padding={0.35}
-                colors="#1f77b4"
-                axisBottom={{
-                  tickSize: 0,
-                  tickPadding: 8,
-                  tickRotation: 0,
-                  format: getLetter
-                }}
-                axisLeft={null}
-                enableLabel={false}
-                layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', RecenciaLabels]}
-                theme={{
-                  axis: {
-                    ticks: { text: { fill: '#ffffff', fontSize: 10, fontWeight: 600 } }
-                  },
-                  grid: { line: { stroke: 'rgba(255, 255, 255, 0.05)', strokeWidth: 1 } },
-                  tooltip: { container: { background: '#111', color: '#f0f0f0', borderRadius: '6px' } }
-                }}
-                tooltip={({ id, value }) => (
-                  <div className="chart-tooltip"><strong>{id}</strong><br/>{formatMilhar(value)} dias</div>
-                )}
-              />
-            </div>
+                barCategoryGap="35%"
+              >
+                <XAxis
+                  dataKey="id"
+                  tickFormatter={getLetter}
+                  tick={{ fill: '#ffffff', fontSize: 14, fontWeight: 600 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                />
+                <YAxis hide />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent 
+                      indicator="dashed" 
+                      formatter={(value) => `${formatCompacto(value)} dias`} 
+                    />
+                  }
+                />
+                <Bar
+                  dataKey="recenciaMedia"
+                  fill="var(--color-recenciaMedia)"
+                  radius={4}
+                >
+                  {sortedData.map((entry, index) => {
+                    const isSelected = segmentoAtivo === null || getLetter(entry.id) === segmentoAtivo;
+                    return (
+                      <Cell 
+                        key={`cell-rec-${index}`} 
+                        fill="var(--color-recenciaMedia)"
+                        opacity={isSelected ? 1 : 0.15}
+                        style={{ transition: 'opacity 0.3s ease' }}
+                      />
+                    );
+                  })}
+                  <LabelList
+                    dataKey="recenciaMedia"
+                    content={(props) => (
+                      <BarTopLabel {...props} formatter={(v) => formatCompacto(v)} activeSegment={segmentoAtivo} />
+                    )}
+                  />
+                </Bar>
+              </ReBarChart>
+            </ChartContainer>
           </div>
 
+          {/* ── Frequência Média ── */}
           <div className="chart-wrapper glass-panel">
             <h4><RefreshCw size={18} /> Frequência Média</h4>
-            <div className="bar-chart-container">
-              <ResponsiveBar
+            <ChartContainer
+              className="bar-chart-container"
+              config={{ frequenciaMedia: { label: 'Frequência Média', color: '#FFD700' } }}
+            >
+              <ReBarChart
                 data={sortedData}
-                keys={['frequenciaMedia']}
-                indexBy="id"
                 margin={{ top: 30, right: 20, bottom: 50, left: 20 }}
-                padding={0.35}
-                colors="#FFD700"
-                axisBottom={{
-                  tickSize: 0,
-                  tickPadding: 8,
-                  tickRotation: 0,
-                  format: getLetter
-                }}
-                axisLeft={null}
-                enableLabel={false}
-                layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', FrequenciaLabels]}
-                theme={{
-                  axis: {
-                    ticks: { text: { fill: '#ffffff', fontSize: 10, fontWeight: 600 } }
-                  },
-                  grid: { line: { stroke: 'rgba(255, 255, 255, 0.05)', strokeWidth: 1 } },
-                  tooltip: { container: { background: '#111', color: '#f0f0f0', borderRadius: '6px' } }
-                }}
-                tooltip={({ id, value }) => (
-                  <div className="chart-tooltip"><strong>{id}</strong><br/>{formatMilhar(value)} locações</div>
-                )}
-              />
-            </div>
+                barCategoryGap="35%"
+              >
+                <XAxis
+                  dataKey="id"
+                  tickFormatter={getLetter}
+                  tick={{ fill: '#ffffff', fontSize: 14, fontWeight: 600 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                />
+                <YAxis hide />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent 
+                      indicator="dashed" 
+                      formatter={(value) => `${formatCompacto(value)} locações`} 
+                    />
+                  }
+                />
+                <Bar
+                  dataKey="frequenciaMedia"
+                  fill="var(--color-frequenciaMedia)"
+                  radius={4}
+                >
+                  {sortedData.map((entry, index) => {
+                    const isSelected = segmentoAtivo === null || getLetter(entry.id) === segmentoAtivo;
+                    return (
+                      <Cell 
+                        key={`cell-freq-${index}`} 
+                        fill="var(--color-frequenciaMedia)"
+                        opacity={isSelected ? 1 : 0.15}
+                        style={{ transition: 'opacity 0.3s ease' }}
+                      />
+                    );
+                  })}
+                  <LabelList
+                    dataKey="frequenciaMedia"
+                    content={(props) => (
+                      <BarTopLabel {...props} formatter={(v) => formatCompacto(v)} activeSegment={segmentoAtivo} />
+                    )}
+                  />
+                </Bar>
+              </ReBarChart>
+            </ChartContainer>
           </div>
 
+          {/* ── Ticket Médio ── */}
           <div className="chart-wrapper glass-panel">
             <h4><Coins size={18} /> Ticket Médio (R$)</h4>
-            <div className="bar-chart-container">
-              <ResponsiveBar
+            <ChartContainer
+              className="bar-chart-container"
+              config={{ monetarioMedio: { label: 'Ticket Médio', color: '#FF8C00' } }}
+            >
+              <ReBarChart
                 data={sortedData}
-                keys={['monetarioMedio']}
-                indexBy="id"
                 margin={{ top: 30, right: 20, bottom: 50, left: 20 }}
-                padding={0.35}
-                colors="#FF8C00"
-                axisBottom={{
-                  tickSize: 0,
-                  tickPadding: 8,
-                  tickRotation: 0,
-                  format: getLetter
-                }}
-                axisLeft={null}
-                enableLabel={false}
-                layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', TicketLabels]}
-                theme={{
-                  axis: {
-                    ticks: { text: { fill: '#ffffff', fontSize: 10, fontWeight: 600 } }
-                  },
-                  grid: { line: { stroke: 'rgba(255, 255, 255, 0.05)', strokeWidth: 1 } },
-                  tooltip: { container: { background: '#111', color: '#f0f0f0', borderRadius: '6px' } }
-                }}
-                tooltip={({ id, value }) => (
-                  <div className="chart-tooltip"><strong>{id}</strong><br/>{formatMoeda(value)}</div>
-                )}
-              />
-            </div>
+                barCategoryGap="35%"
+              >
+                <XAxis
+                  dataKey="id"
+                  tickFormatter={getLetter}
+                  tick={{ fill: '#ffffff', fontSize: 14, fontWeight: 600 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                />
+                <YAxis hide />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent 
+                      indicator="dashed" 
+                      formatter={(value) => formatCompacto(value, true)} 
+                    />
+                  }
+                />
+                <Bar
+                  dataKey="monetarioMedio"
+                  fill="var(--color-monetarioMedio)"
+                  radius={4}
+                >
+                  {sortedData.map((entry, index) => {
+                    const isSelected = segmentoAtivo === null || getLetter(entry.id) === segmentoAtivo;
+                    return (
+                      <Cell 
+                        key={`cell-mon-${index}`} 
+                        fill="var(--color-monetarioMedio)"
+                        opacity={isSelected ? 1 : 0.15}
+                        style={{ transition: 'opacity 0.3s ease' }}
+                      />
+                    );
+                  })}
+                  <LabelList
+                    dataKey="monetarioMedio"
+                    content={(props) => (
+                      <BarTopLabel {...props} formatter={(v) => formatCompacto(v, true)} activeSegment={segmentoAtivo} />
+                    )}
+                  />
+                </Bar>
+              </ReBarChart>
+            </ChartContainer>
           </div>
 
+          {/* ── Faturamento Total ── */}
           <div className="chart-wrapper glass-panel">
             <h4><Coins size={18} /> Faturamento Total (R$)</h4>
-            <div className="bar-chart-container">
-              <ResponsiveBar
+            <ChartContainer
+              className="bar-chart-container"
+              config={{ faturamentoTotal: { label: 'Faturamento Total', color: '#2ca02c' } }}
+            >
+              <ReBarChart
                 data={sortedData}
-                keys={['faturamentoTotal']}
-                indexBy="id"
                 margin={{ top: 30, right: 20, bottom: 50, left: 20 }}
-                padding={0.35}
-                colors="#2ca02c"
-                axisBottom={{
-                  tickSize: 0,
-                  tickPadding: 8,
-                  tickRotation: 0,
-                  format: getLetter
-                }}
-                axisLeft={null}
-                enableLabel={false}
-                layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', FaturamentoLabels]}
-                theme={{
-                  axis: {
-                    ticks: { text: { fill: '#ffffff', fontSize: 10, fontWeight: 600 } }
-                  },
-                  grid: { line: { stroke: 'rgba(255, 255, 255, 0.05)', strokeWidth: 1 } },
-                  tooltip: { container: { background: '#111', color: '#f0f0f0', borderRadius: '6px' } }
-                }}
-                tooltip={({ id, value }) => (
-                  <div className="chart-tooltip"><strong>{id}</strong><br/>{formatMoeda(value)}</div>
-                )}
-              />
-            </div>
+                barCategoryGap="35%"
+              >
+                <XAxis
+                  dataKey="id"
+                  tickFormatter={getLetter}
+                  tick={{ fill: '#ffffff', fontSize: 14, fontWeight: 600 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                />
+                <YAxis hide />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent 
+                      indicator="dashed" 
+                      formatter={(value) => formatCompacto(value, true)} 
+                    />
+                  }
+                />
+                <Bar
+                  dataKey="faturamentoTotal"
+                  fill="var(--color-faturamentoTotal)"
+                  radius={4}
+                >
+                  {sortedData.map((entry, index) => {
+                    const isSelected = segmentoAtivo === null || getLetter(entry.id) === segmentoAtivo;
+                    return (
+                      <Cell 
+                        key={`cell-fat-${index}`} 
+                        fill="var(--color-faturamentoTotal)"
+                        opacity={isSelected ? 1 : 0.15}
+                        style={{ transition: 'opacity 0.3s ease' }}
+                      />
+                    );
+                  })}
+                  <LabelList
+                    dataKey="faturamentoTotal"
+                    content={(props) => (
+                      <BarTopLabel {...props} formatter={(v) => formatCompacto(v, true)} activeSegment={segmentoAtivo} />
+                    )}
+                  />
+                </Bar>
+              </ReBarChart>
+            </ChartContainer>
           </div>
         </div>
       </div>
@@ -562,18 +714,21 @@ export const RfmInquilinos = () => {
   return (
     <div className="page-container animate-fade-in">
       <header className="page-header">
-        <h1><BarChart3 size={24} /> Análise RFM - Inquilinos</h1>
+        <h1><LayoutDashboard size={24} /> Análise RFM - Inquilinos</h1>
         <p className="subtitle">Visualização segmentada para análise de comportamento e valor dos clientes.</p>
       </header>
 
       <div className="rfm-tabs">
-        <button className={`rfm-tab-btn ${activeTab === 'geral' ? 'active' : ''}`} onClick={() => setActiveTab('geral')}><LineChart size={16} /> Visão Geral</button>
-        <button className={`rfm-tab-btn ${activeTab === 'comparativa' ? 'active' : ''}`} onClick={() => setActiveTab('comparativa')}><Globe size={16} /> Análise Quantitativa</button>
+        <button className={`rfm-tab-btn ${activeTab === 'geral' ? 'active' : ''}`} onClick={() => setActiveTab('geral')}><LineChart size={16} /> Visão Geral e Quantitativa</button>
         <button className={`rfm-tab-btn ${activeTab === 'lista' ? 'active' : ''}`} onClick={() => setActiveTab('lista')}><Search size={16} /> Lista de Clientes</button>
       </div>
 
-      {activeTab === 'geral' && renderGeral()}
-      {activeTab === 'comparativa' && renderComparativa()}
+      {activeTab === 'geral' && (
+        <>
+          {renderGeral()}
+          {renderComparativa()}
+        </>
+      )}
       {activeTab === 'lista' && renderLista()}
 
     </div>

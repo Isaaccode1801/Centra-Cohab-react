@@ -1,29 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { ResponsiveBar } from '@nivo/bar';
-import { ResponsiveLine } from '@nivo/line';
-import { BarChart3, Users } from 'lucide-react';
+import { BarChart, Bar, BarXAxis, Grid, ChartTooltip, BarLineIndicator } from "../components/BarChart";
+import { Users } from 'lucide-react';
+import { ParetoIcon } from '../components/ParetoIcon';
 import './Pareto.css';
 
-const ValueLabels = ({ bars }) => {
-  return bars.map(bar => {
-    const value = bar.data.data.valorFormatado;
-    const valueInMi = (Number(value) / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-    return (
-      <text
-        key={bar.key}
-        x={bar.x + bar.width / 2}
-        y={bar.y - 8}
-        textAnchor="middle"
-        fill="#ffffff"
-        fontSize="10px"
-        fontWeight="600"
-      >
-        {`${valueInMi} Mi`}
-      </text>
-    );
-  });
-};
 
 export const ParetoProprietarios = () => {
   const { api } = useAuth();
@@ -32,6 +13,7 @@ export const ParetoProprietarios = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState('');
+  const [selectedClass, setSelectedClass] = useState('Todas');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,7 +37,18 @@ export const ParetoProprietarios = () => {
           };
         });
         
-        setData(transformedData);
+        const maxVal = Math.max(...transformedData.map(d => d.valorFormatado), 1);
+        let runningTotal = 0;
+        const finalData = transformedData.map(item => {
+          runningTotal += item.valorFormatado;
+          return {
+            ...item,
+            cumulativoAbsoluto: runningTotal,
+            cumPorcentagemScaled: (item.cumPorcentagem / 100) * maxVal
+          };
+        });
+
+        setData(finalData);
         setProprietarios(propRes.data);
         if (propRes.data.length > 0) {
           setSelectedGroup(propRes.data[0].grupo_50);
@@ -70,6 +63,25 @@ export const ParetoProprietarios = () => {
     
     fetchData();
   }, [api]);
+
+  useEffect(() => {
+    // Quando a classe selecionada muda, garantimos que o grupo selecionado pertence a ela
+    if (selectedClass !== 'Todas' && data.length > 0 && proprietarios.length > 0) {
+      const gruposNaClasse = proprietarios.filter(g => {
+        const d = data.find(item => item.grupo_50.toString() === g.grupo_50.toString());
+        if (!d) return false;
+        if (selectedClass === 'A') return d.cumPorcentagem <= 50;
+        if (selectedClass === 'B') return d.cumPorcentagem > 50 && d.cumPorcentagem <= 80;
+        if (selectedClass === 'C') return d.cumPorcentagem > 80;
+        return false;
+      });
+      
+      const grupoAtualValido = gruposNaClasse.some(g => g.grupo_50.toString() === selectedGroup.toString());
+      if (!grupoAtualValido && gruposNaClasse.length > 0) {
+        setSelectedGroup(gruposNaClasse[0].grupo_50);
+      }
+    }
+  }, [selectedClass, data, proprietarios, selectedGroup]);
 
   if (loading) return <div className="loading-state"><div className="spinner"></div><p>Carregando dados de Pareto...</p></div>;
   if (error) return <div className="error-message">{error}</div>;
@@ -99,7 +111,7 @@ export const ParetoProprietarios = () => {
   return (
     <div className="page-container animate-fade-in">
       <header className="page-header">
-        <h1><BarChart3 size={24} /> Análise de Pareto ABC - Proprietários</h1>
+        <h1><ParetoIcon size={24} /> Análise de Pareto ABC - Proprietários</h1>
         <p className="subtitle">Visualização de desempenho por bloco de clientes e análise de valor acumulado.</p>
       </header>
 
@@ -126,7 +138,7 @@ export const ParetoProprietarios = () => {
         </div>
       </div>
 
-      <div className="chart-section glass-panel">
+      <div className="chart-section glass-panel" style={{ position: 'relative', zIndex: 1, isolation: 'isolate' }}>
         <div className="chart-header">
           <h3>Gráfico de Pareto</h3>
           <div className="pareto-legend">
@@ -135,58 +147,93 @@ export const ParetoProprietarios = () => {
             <span className="legend-item"><span className="legend-dot" style={{ background: '#ff4d4d' }}></span>81–100% (Classe C)</span>
           </div>
         </div>
-        <div style={{ height: '420px', position: 'relative' }}>
-          <ResponsiveBar
+        <div style={{ height: '400px', position: 'relative' }}>
+          <BarChart
             data={data}
-            keys={['valorFormatado']}
-            indexBy="grupo_50"
-            margin={{ top: 30, right: 20, bottom: 55, left: 10 }}
-            padding={0.5}
-            colors={({ data }) => data.cor}
-            axisBottom={{
-              tickSize: 0,
-              tickPadding: 8,
-              tickRotation: -45,
-              legend: 'Quantidade de Clientes (Acumulado)',
-              legendPosition: 'middle',
-              legendOffset: 48
-            }}
-            axisLeft={null}
-            gridYValues={[]}
-            enableLabel={false}
-            layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', ValueLabels]}
-            theme={{
-              axis: {
-                ticks: { text: { fill: '#cccccc', fontSize: 11 } },
-                legend: { text: { fill: '#aaaaaa', fontSize: 12, fontWeight: 500 } }
-              },
-              grid: { line: { stroke: 'transparent' } },
-              labels: { text: { fontSize: 10, fontWeight: 600 } },
-              tooltip: { container: { background: '#111', color: '#f0f0f0', borderRadius: '6px' } }
-            }}
-            tooltip={({ value, data }) => (
-              <div style={{ padding: '8px 14px', background: '#111', borderRadius: '6px', fontSize: '0.88rem', lineHeight: 1.6 }}>
-                <strong style={{ color: '#00f0ff' }}>Grupo {data.grupo_50}</strong><br />
-                Valor: <strong>R$ {Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</strong><br />
-                Acumulado: {data.cumPorcentagem}%
-              </div>
-            )}
-          />
+            xDataKey="grupo_50"
+            orientation="vertical"
+            margin={{ top: 20, right: 10, bottom: 40, left: 10 }}
+            barGap={0.4}
+            aspectRatio="auto"
+          >
+            <Grid horizontal={true} vertical={false} />
+            <BarXAxis showAllLabels={true} />
+            <Bar
+              dataKey="valorFormatado"
+              fill={(d) => d.cor}
+              showValues={true}
+              valueFormatter={(v) => `${(v / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} Mi`}
+            />
+            <BarLineIndicator
+              valueKey="cumPorcentagemScaled"
+              xKey="grupo_50"
+              labelKey="cumulativoAbsoluto"
+              stroke="#a855f7"
+              strokeWidth={3}
+              valueFormatter={(v) => {
+                if (v == null || isNaN(v)) return '';
+                return `R$ ${(Number(v) / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} Mi`;
+              }}
+            />
+            <ChartTooltip
+              rows={(point) => [
+                {
+                  color: point.cor,
+                  label: 'Valor',
+                  value: `R$ ${Number(point.valorFormatado).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+                },
+                {
+                  color: '#a855f7',
+                  label: 'Acumulado',
+                  value: `R$ ${(point.cumulativoAbsoluto / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} Mi (${point.cumPorcentagem}%)`
+                }
+              ]}
+            />
+          </BarChart>
+          <div style={{ textAlign: 'center', fontSize: '11px', color: '#888', fontWeight: '500', marginTop: '8px' }}>
+            Quantidade de Clientes (Acumulado)
+          </div>
         </div>
       </div>
 
-      <div className="details-section glass-panel">
-        <div className="details-header">
-          <h3><Users size={20} /> Detalhes dos Clientes por Grupo</h3>
-          <select 
-            className="group-select" 
-            value={selectedGroup} 
-            onChange={(e) => setSelectedGroup(Number(e.target.value))}
-          >
-            {proprietarios.map(g => (
+      <div className="details-section glass-panel" style={{ position: 'relative', zIndex: 5 }}>
+        <div className="filter-controls glass-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10 }}>
+          <h3 style={{ margin: 0 }}><Users size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Detalhes dos Clientes por Grupo</h3>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <select 
+              className="group-select" 
+              value={selectedClass} 
+              onChange={(e) => {
+                setSelectedClass(e.target.value);
+                // The group will be auto-updated by the useEffect we'll add if the current group is not in the new class
+              }}
+              style={{ minWidth: '120px' }}
+            >
+              <option value="Todas">Todas as Classes</option>
+              <option value="A">Classe A (Top 50%)</option>
+              <option value="B">Classe B (51-80%)</option>
+              <option value="C">Classe C (81-100%)</option>
+            </select>
+            
+            <select 
+              className="group-select" 
+              value={selectedGroup} 
+              onChange={(e) => setSelectedGroup(Number(e.target.value))}
+              style={{ minWidth: '120px' }}
+            >
+            {proprietarios.filter(g => {
+              if (selectedClass === 'Todas') return true;
+              const d = data.find(item => item.grupo_50.toString() === g.grupo_50.toString());
+              if (!d) return false;
+              if (selectedClass === 'A') return d.cumPorcentagem <= 50;
+              if (selectedClass === 'B') return d.cumPorcentagem > 50 && d.cumPorcentagem <= 80;
+              if (selectedClass === 'C') return d.cumPorcentagem > 80;
+              return true;
+            }).map(g => (
               <option key={g.grupo_50} value={g.grupo_50}>Grupo {g.grupo_50}</option>
             ))}
           </select>
+          </div>
         </div>
 
         <div className="table-responsive">

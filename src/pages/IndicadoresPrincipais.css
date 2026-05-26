@@ -6,25 +6,11 @@
   gap: 16px;
 }
 
-.filter-options {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.radio-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  color: var(--text-primary);
-  font-size: 1rem;
-}
-
 .custom-date-filters {
   display: flex;
   align-items: center;
   gap: 12px;
+  color: var(--text-secondary);
 }
 
 .custom-date-filters input[type="date"] {
@@ -32,7 +18,7 @@
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   padding: 8px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   outline: none;
   font-family: inherit;
 }
@@ -41,52 +27,256 @@
   border-color: var(--border-focus);
 }
 
+/* ── Grid ──────────────────────────────── */
 .indicators-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 }
 
-.indicator-card {
-  padding: 30px 24px;
+@media (max-width: 1200px) {
+  .indicators-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .indicators-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Base card ─────────────────────────── */
+.ind-card {
+  position: relative;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 28px 24px 24px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  border: 1px solid transparent;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ind-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.ind-card:hover {
+  transform: translateY(-5px);
+}
+
+.ind-card:hover::before {
+  opacity: 1;
+}
+
+/* hero card spans 2 columns */
+.ind-card--hero {
+  grid-column: span 2;
+}
+
+@media (max-width: 1200px) {
+  .ind-card--hero { grid-column: span 2; }
+}
+
+@media (max-width: 640px) {
+  .ind-card--hero { grid-column: span 1; }
+}
+
+/* ── Icon wrapper ──────────────────────── */
+.ind-card__icon-wrap {
+  display: flex;
   align-items: center;
-  text-align: center;
   justify-content: center;
-  gap: 12px;
-  transition: transform var(--transition-fast);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
-.indicator-card:hover {
-  transform: translateY(-4px);
-}
-
-.indicator-title {
-  color: var(--text-secondary);
-  font-size: 1.1rem;
-  font-weight: 500;
+/* ── Labels ────────────────────────────── */
+.ind-card__label {
+  font-size: 0.72rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
 }
 
-.indicator-value {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: var(--text-primary);
+.ind-card__value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  word-break: break-all;
 }
 
-.indicator-value.highlight {
-  color: var(--accent-1);
-  text-shadow: 0 0 15px var(--accent-glow);
+.ind-card--hero .ind-card__value {
+  font-size: 2.4rem;
 }
 
-.indicator-value.success {
+.ind-card__sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════
+   COLOR THEMES
+   ═══════════════════════════════════════ */
+
+/* Blue — Contratos Ativos */
+.ind-card--blue {
+  border-color: rgba(96, 165, 250, 0.25);
+  background: linear-gradient(145deg, rgba(30, 58, 138, 0.18) 0%, var(--bg-card) 60%);
+  box-shadow: 0 4px 24px rgba(96, 165, 250, 0.06);
+}
+.ind-card--blue::before {
+  background: radial-gradient(ellipse at top left, rgba(96, 165, 250, 0.08) 0%, transparent 70%);
+}
+.ind-card--blue:hover {
+  box-shadow: 0 8px 32px rgba(96, 165, 250, 0.18);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+.ind-card__icon-wrap--blue {
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+}
+.ind-card__value--blue { color: #93c5fd; }
+
+/* Cyan — VGL Ativo (hero) */
+.ind-card--cyan {
+  border-color: rgba(0, 240, 255, 0.35);
+  background: linear-gradient(145deg, rgba(0, 30, 40, 0.7) 0%, rgba(0, 10, 15, 0.9) 100%);
+  box-shadow: 0 4px 32px rgba(0, 240, 255, 0.1), inset 0 0 30px rgba(0, 240, 255, 0.04);
+}
+.ind-card--cyan::before {
+  background: radial-gradient(ellipse at top left, rgba(0, 240, 255, 0.1) 0%, transparent 65%);
+}
+.ind-card--cyan:hover {
+  box-shadow: 0 8px 48px rgba(0, 240, 255, 0.22), inset 0 0 30px rgba(0, 240, 255, 0.06);
+  border-color: rgba(0, 240, 255, 0.6);
+}
+.ind-card__icon-wrap--cyan {
+  background: rgba(0, 240, 255, 0.1);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+}
+.ind-card__value--cyan {
+  background: linear-gradient(to right, #00f0ff, #7dd3fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.5));
+}
+
+/* Green — Renovações */
+.ind-card--green {
+  border-color: rgba(74, 222, 128, 0.25);
+  background: linear-gradient(145deg, rgba(5, 46, 22, 0.35) 0%, var(--bg-card) 60%);
+  box-shadow: 0 4px 24px rgba(74, 222, 128, 0.06);
+}
+.ind-card--green::before {
+  background: radial-gradient(ellipse at top left, rgba(74, 222, 128, 0.08) 0%, transparent 70%);
+}
+.ind-card--green:hover {
+  box-shadow: 0 8px 32px rgba(74, 222, 128, 0.18);
+  border-color: rgba(74, 222, 128, 0.5);
+}
+.ind-card__icon-wrap--green {
+  background: rgba(74, 222, 128, 0.1);
   color: #4ade80;
-  text-shadow: 0 0 15px rgba(74, 222, 128, 0.2);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+.ind-card__value--green { color: #4ade80; text-shadow: 0 0 20px rgba(74, 222, 128, 0.3); }
+
+.ind-card--green-soft {
+  border-color: rgba(74, 222, 128, 0.15);
+  background: linear-gradient(145deg, rgba(5, 46, 22, 0.2) 0%, var(--bg-card) 60%);
+}
+.ind-card--green-soft::before {
+  background: radial-gradient(ellipse at top left, rgba(74, 222, 128, 0.05) 0%, transparent 70%);
+}
+.ind-card--green-soft:hover {
+  box-shadow: 0 8px 32px rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.35);
 }
 
-.indicator-value.danger {
-  color: #f87171;
-  text-shadow: 0 0 15px rgba(248, 113, 113, 0.2);
+/* Red — Rescisões */
+.ind-card--red {
+  border-color: rgba(248, 113, 113, 0.25);
+  background: linear-gradient(145deg, rgba(69, 10, 10, 0.3) 0%, var(--bg-card) 60%);
+  box-shadow: 0 4px 24px rgba(248, 113, 113, 0.06);
 }
+.ind-card--red::before {
+  background: radial-gradient(ellipse at top left, rgba(248, 113, 113, 0.08) 0%, transparent 70%);
+}
+.ind-card--red:hover {
+  box-shadow: 0 8px 32px rgba(248, 113, 113, 0.18);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+.ind-card__icon-wrap--red {
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+.ind-card__value--red { color: #f87171; text-shadow: 0 0 20px rgba(248, 113, 113, 0.3); }
+
+.ind-card--red-soft {
+  border-color: rgba(248, 113, 113, 0.15);
+  background: linear-gradient(145deg, rgba(69, 10, 10, 0.18) 0%, var(--bg-card) 60%);
+}
+.ind-card--red-soft::before {
+  background: radial-gradient(ellipse at top left, rgba(248, 113, 113, 0.05) 0%, transparent 70%);
+}
+.ind-card--red-soft:hover {
+  box-shadow: 0 8px 32px rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+/* Purple — Locações */
+.ind-card--purple {
+  border-color: rgba(168, 85, 247, 0.25);
+  background: linear-gradient(145deg, rgba(46, 16, 101, 0.3) 0%, var(--bg-card) 60%);
+  box-shadow: 0 4px 24px rgba(168, 85, 247, 0.06);
+}
+.ind-card--purple::before {
+  background: radial-gradient(ellipse at top left, rgba(168, 85, 247, 0.08) 0%, transparent 70%);
+}
+.ind-card--purple:hover {
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+.ind-card__icon-wrap--purple {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+.ind-card__value--purple { color: #c084fc; text-shadow: 0 0 20px rgba(168, 85, 247, 0.3); }
+
+/* Teal — VGL Adquirido */
+.ind-card--teal {
+  border-color: rgba(20, 184, 166, 0.25);
+  background: linear-gradient(145deg, rgba(4, 47, 46, 0.35) 0%, var(--bg-card) 60%);
+  box-shadow: 0 4px 24px rgba(20, 184, 166, 0.06);
+}
+.ind-card--teal::before {
+  background: radial-gradient(ellipse at top left, rgba(20, 184, 166, 0.08) 0%, transparent 70%);
+}
+.ind-card--teal:hover {
+  box-shadow: 0 8px 32px rgba(20, 184, 166, 0.18);
+  border-color: rgba(20, 184, 166, 0.5);
+}
+.ind-card__icon-wrap--teal {
+  background: rgba(20, 184, 166, 0.1);
+  color: #2dd4bf;
+  border: 1px solid rgba(20, 184, 166, 0.2);
+}
+.ind-card__value--teal { color: #2dd4bf; text-shadow: 0 0 20px rgba(20, 184, 166, 0.3); }

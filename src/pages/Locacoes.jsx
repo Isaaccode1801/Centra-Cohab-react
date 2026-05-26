@@ -1,112 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ResponsivePie } from '@nivo/pie';
-import { ResponsiveBar } from '@nivo/bar';
-import { ResponsiveLine } from '@nivo/line';
-import { MapPin } from 'lucide-react';
+import { Map } from 'lucide-react';
+import { ParentSize } from '@visx/responsive';
+import { DoubleDonutChart } from '../components/DoubleDonutChart';
+import { BarChart, Bar, BarYAxis, Grid, ChartTooltip } from "../components/BarChart";
+import { AreaChart } from '../components/ui/AreaChart';
 import './Locacoes.css';
-
-const LocacoesLabels = ({ bars }) => {
-  // Group by assistant to find the rightmost bar segment
-  const grouped = {};
-  bars.forEach(bar => {
-    const name = bar.data.indexValue;
-    if (!grouped[name] || (bar.x + bar.width > grouped[name].maxX)) {
-      grouped[name] = {
-        maxX: bar.x + bar.width,
-        y: bar.y,
-        height: bar.height,
-        total: bar.data.data.totalLocacoes,
-        key: bar.key
-      };
-    }
-  });
-
-  return Object.values(grouped).map(item => {
-    const labelText = String(item.total);
-    const x = item.maxX + 6;
-    
-    return (
-      <text
-        key={`label-${item.key}`}
-        x={x}
-        y={item.y + item.height / 2}
-        dy="0.35em"
-        textAnchor="start"
-        fill="#ffffff"
-        fontSize="10px"
-        fontWeight="700"
-      >
-        {labelText}
-      </text>
-    );
-  });
-};
-
-const VglLabels = ({ bars }) => {
-  // Group by assistant to find the rightmost bar segment
-  const grouped = {};
-  bars.forEach(bar => {
-    const name = bar.data.indexValue;
-    if (!grouped[name] || (bar.x + bar.width > grouped[name].maxX)) {
-      grouped[name] = {
-        maxX: bar.x + bar.width,
-        y: bar.y,
-        height: bar.height,
-        total: bar.data.data.totalVgl,
-        key: bar.key
-      };
-    }
-  });
-
-  return Object.values(grouped).map(item => {
-    const labelText = `R$ ${(item.total / 1000).toFixed(1)}k`;
-    const x = item.maxX + 6;
-    
-    return (
-      <text
-        key={`label-${item.key}`}
-        x={x}
-        y={item.y + item.height / 2}
-        dy="0.35em"
-        textAnchor="start"
-        fill="#ffffff"
-        fontSize="10px"
-        fontWeight="700"
-      >
-        {labelText}
-      </text>
-    );
-  });
-};
-
-const TicketLabels = ({ bars }) => {
-  return bars.map(bar => {
-    const val = bar.data.value;
-    if (val === undefined || val === null || val === 0) return null;
-    const labelText = `R$ ${Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const isSmall = bar.width < 110;
-    
-    const x = isSmall ? bar.x + bar.width + 6 : bar.x + bar.width / 2;
-    const textAnchor = isSmall ? "start" : "middle";
-    const fill = isSmall ? "#ffffff" : "#000000";
-    
-    return (
-      <text
-        key={bar.key}
-        x={x}
-        y={bar.y + bar.height / 2}
-        dy="0.35em"
-        textAnchor={textAnchor}
-        fill={fill}
-        fontSize="10px"
-        fontWeight="700"
-      >
-        {labelText}
-      </text>
-    );
-  });
-};
 
 export const Locacoes = () => {
   const { api } = useAuth();
@@ -180,8 +80,8 @@ export const Locacoes = () => {
     } else if (filtroPeriodo === 'Este ano') {
       inicio = new Date(hoje.getFullYear(), 0, 1);
     } else {
-      inicio = new Date(dataInicial);
-      fim = new Date(dataFinal);
+      inicio = new Date(dataInicial + 'T00:00:00');
+      fim = new Date(dataFinal + 'T23:59:59');
     }
     return { inicio, fim };
   };
@@ -270,6 +170,11 @@ export const Locacoes = () => {
     }
   ];
 
+  const subframeVgl = mensalArray.length > 0 ? {
+    data: mensalArray.map(m => ({ mes: m.mesAno, 'VGL Total': m.vgl })),
+    categories: ['VGL Total']
+  } : { data: [], categories: [] };
+
   const lineLocacoesData = [
     {
       id: "Locações",
@@ -280,34 +185,41 @@ export const Locacoes = () => {
   
   const commonTheme = {
     axis: {
-      ticks: { text: { fill: '#ffffff', fontSize: 11, fontWeight: 600 } },
-      legend: { text: { fill: '#ffffff', fontSize: 13, fontWeight: 600 } }
+      ticks: { text: { fill: '#ffffff', fontSize: 15, fontWeight: 600 } },
+      legend: { text: { fill: '#ffffff', fontSize: 17, fontWeight: 700 } }
     },
-    grid: { line: { stroke: 'rgba(255, 255, 255, 0.05)', strokeWidth: 1 } },
+    grid: { line: { stroke: 'transparent' } },
     tooltip: { container: { background: '#111', color: '#f0f0f0', borderRadius: '8px' } }
   };
 
   return (
     <div className="page-container animate-fade-in">
       <header className="page-header">
-        <h1><MapPin size={24} /> Locações</h1>
+        <h1><Map size={24} /> Locações</h1>
         <p className="subtitle">Análise de locações por tipologia, assistente e evolução temporal.</p>
       </header>
 
       <div className="filter-section glass-panel">
-        <div className="filter-options">
-          {['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].map(opcao => (
-            <label key={opcao} className="radio-label">
+        <div className="glass-radio-group" style={{
+          '--accent-color': 'linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(168, 85, 247, 0.8))',
+          '--accent-glow': 'rgba(168, 85, 247, 0.5)'
+        }}>
+          {['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].map((opcao, idx) => (
+            <React.Fragment key={opcao}>
               <input 
                 type="radio" 
                 name="filtroPeriodo" 
+                id={`periodo-locacoes-${idx}`}
                 value={opcao} 
                 checked={filtroPeriodo === opcao}
                 onChange={(e) => setFiltroPeriodo(e.target.value)} 
               />
-              {opcao}
-            </label>
+              <label htmlFor={`periodo-locacoes-${idx}`}>{opcao}</label>
+            </React.Fragment>
           ))}
+          <div className="glass-glider" style={{
+            transform: `translateX(${['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].indexOf(filtroPeriodo) * 100}%)`
+          }} />
         </div>
         {filtroPeriodo === 'Personalizado' && (
           <div className="custom-date-filters">
@@ -323,60 +235,48 @@ export const Locacoes = () => {
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : (
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="metrics-row">
             <div className="metric-card glass-panel">
               <span className="metric-label">Locações</span>
-              <span className="metric-value">{formatMilhar(locacoesQtd)}</span>
+              <span className="metric-value" style={{ color: '#c084fc', textShadow: '0 0 10px rgba(192, 132, 252, 0.4)' }}>{formatMilhar(locacoesQtd)}</span>
             </div>
-            <div className="metric-card glass-panel">
-              <span className="metric-label">VGL</span>
-              <span className="metric-value">{formatMoeda(vglTotal)}</span>
+            <div className="metric-card glass-panel" style={{ border: '1px solid rgba(168, 85, 247, 0.4)', boxShadow: '0 0 20px rgba(168, 85, 247, 0.15), inset 0 0 15px rgba(168, 85, 247, 0.1)', background: 'linear-gradient(135deg, rgba(20, 0, 30, 0.6) 0%, rgba(5, 0, 10, 0.8) 100%)' }}>
+              <span className="metric-label" style={{ color: '#e9d5ff' }}>VGL</span>
+              <span className="metric-value" style={{ color: '#a855f7', textShadow: '0 0 15px rgba(168, 85, 247, 0.9), 0 0 30px rgba(168, 85, 247, 0.5)', background: 'linear-gradient(to right, #c084fc, #e9d5ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', fontWeight: '800' }}>{formatMoeda(vglTotal)}</span>
             </div>
             <div className="metric-card glass-panel">
               <span className="metric-label">Ticket Médio</span>
-              <span className="metric-value highlight">{formatMoeda(ticketMedio)}</span>
+              <span className="metric-value" style={{ color: '#d8b4fe', textShadow: '0 0 10px rgba(216, 180, 254, 0.3)' }}>{formatMoeda(ticketMedio)}</span>
             </div>
           </div>
 
-          <div className="charts-grid-2">
+          <div className="charts-grid-2" style={{ gridTemplateColumns: '1fr' }}>
             <div className="chart-wrapper glass-panel">
-              <h3>Quantidade por Tipologia</h3>
+              <h3>Quantidade e VGL por Tipologia (Qtd externa, VGL interno)</h3>
               <div className="pie-container">
-                <ResponsivePie
-                  data={pieDataQtd}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  innerRadius={0.6}
-                  padAngle={1}
-                  cornerRadius={4}
-                  colors={['#6F2DBD', '#CDB4DB', '#1B5E20']}
-                  borderWidth={1}
-                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                  arcLinkLabelsTextColor="var(--text-primary)"
-                  arcLabelsTextColor="#fff"
-                  theme={commonTheme}
-                  valueFormat={v => formatMilhar(v)}
-                />
-              </div>
-            </div>
-            
-            <div className="chart-wrapper glass-panel">
-              <h3>VGL por Tipologia</h3>
-              <div className="pie-container">
-                <ResponsivePie
-                  data={pieDataVgl}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  innerRadius={0.6}
-                  padAngle={1}
-                  cornerRadius={4}
-                  colors={['#1B5E20', '#A5D6A7', '#6F2DBD']}
-                  borderWidth={1}
-                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                  arcLinkLabelsTextColor="var(--text-primary)"
-                  arcLabelsTextColor="#fff"
-                  theme={commonTheme}
-                  valueFormat={v => formatMoeda(v)}
-                />
+                <ParentSize>
+                  {({ width, height }) => (
+                    <DoubleDonutChart
+                      width={width}
+                      height={height}
+                      outerData={pieDataQtd}
+                      innerData={pieDataVgl}
+                      outerTitle="Qtd. Locações"
+                      innerTitle="VGL (R$)"
+                      formatOuterLabel={(v, isExpanded) => isExpanded ? formatMilhar(v) : formatMilhar(v)}
+                      formatInnerLabel={(v, isExpanded) => {
+                        const n = Number(v);
+                        if (isExpanded) return formatMoeda(n);
+                        if (n >= 1000000) return `${(n/1000000).toFixed(1).replace('.',',')} M`;
+                        if (n >= 1000) return `${(n/1000).toFixed(1).replace('.',',')} K`;
+                        return formatMilhar(n);
+                      }}
+                      outerColorRange={['#e9d5ff', '#d8b4fe', '#c084fc', '#a855f7', '#9333ea', '#7e22ce', '#6b21a8']}
+                      innerColorRange={['#3b0764', '#581c87', '#7e22ce', '#9333ea', '#a855f7', '#c084fc', '#d8b4fe']}
+                    />
+                  )}
+                </ParentSize>
               </div>
             </div>
           </div>
@@ -385,111 +285,143 @@ export const Locacoes = () => {
             <div className="chart-wrapper glass-panel">
               <h3>Locações por Assistente</h3>
               <div className="bar-horizontal-container">
-                <ResponsiveBar
+                <BarChart
                   data={barDataLocacoes}
-                  keys={keysLocacoes}
-                  indexBy="assistente"
-                  layout="horizontal"
-                  margin={{ top: 10, right: 80, bottom: 15, left: 140 }}
-                  padding={0.3}
-                  colors={['#6F2DBD', '#CDB4DB']}
-                  enableLabel={false}
-                  layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', LocacoesLabels]}
-                  axisBottom={null}
-                  axisLeft={{
-                    tickSize: 0,
-                    tickPadding: 8
-                  }}
-                  theme={commonTheme}
-                  tooltip={({ id, value, indexValue }) => (
-                    <div className="chart-tooltip"><strong>{indexValue}</strong><br/>{id.replace('_locacoes', '')}: {formatMilhar(value)} locações</div>
-                  )}
-                />
+                  xDataKey="assistente"
+                  orientation="horizontal"
+                  margin={{ top: 10, right: 30, bottom: 20, left: 110 }}
+                  barGap={0.35}
+                  stacked={true}
+                  aspectRatio="auto"
+                >
+                  <Grid vertical={false} horizontal={false} />
+                  <BarYAxis fontSize="14px" />
+                  {tipologias.map((t, idx) => (
+                    <Bar
+                      key={t}
+                      dataKey={`${t}_locacoes`}
+                      fill={idx % 2 === 0 ? '#6F2DBD' : '#CDB4DB'}
+                      showValues={true}
+                      valueFormatter={(v) => String(v)}
+                      valueFontSize="15px"
+                    />
+                  ))}
+                  <ChartTooltip
+                    rows={(point) => {
+                      const rows = tipologias
+                        .map((t, idx) => ({
+                          color: idx % 2 === 0 ? '#6F2DBD' : '#CDB4DB',
+                          label: t,
+                          value: point[`${t}_locacoes`] ?? 0
+                        }))
+                        .filter(row => row.value > 0);
+                      rows.push({
+                        color: '#6F2DBD',
+                        label: 'Total',
+                        value: point.totalLocacoes ?? 0
+                      });
+                      return rows;
+                    }}
+                  />
+                </BarChart>
               </div>
             </div>
 
             <div className="chart-wrapper glass-panel">
               <h3>VGL por Assistente</h3>
               <div className="bar-horizontal-container">
-                <ResponsiveBar
+                <BarChart
                   data={barDataVgl}
-                  keys={keysVgl}
-                  indexBy="assistente"
-                  layout="horizontal"
-                  margin={{ top: 10, right: 80, bottom: 15, left: 140 }}
-                  padding={0.3}
-                  colors={['#1B5E20', '#A5D6A7']}
-                  enableLabel={false}
-                  layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', VglLabels]}
-                  axisBottom={null}
-                  axisLeft={{
-                    tickSize: 0,
-                    tickPadding: 8
-                  }}
-                  theme={commonTheme}
-                  tooltip={({ id, value, indexValue }) => (
-                    <div className="chart-tooltip"><strong>{indexValue}</strong><br/>{id.replace('_vgl', '')}: {formatMoeda(value)}</div>
-                  )}
-                />
+                  xDataKey="assistente"
+                  orientation="horizontal"
+                  margin={{ top: 10, right: 30, bottom: 20, left: 110 }}
+                  barGap={0.35}
+                  stacked={true}
+                  aspectRatio="auto"
+                >
+                  <Grid vertical={false} horizontal={false} />
+                  <BarYAxis fontSize="14px" />
+                  {tipologias.map((t, idx) => (
+                    <Bar
+                      key={t}
+                      dataKey={`${t}_vgl`}
+                      fill={idx % 2 === 0 ? '#1B5E20' : '#A5D6A7'}
+                      showValues={true}
+                      valueFormatter={(v) => `R$ ${(v / 1000).toFixed(1)}k`}
+                      valueFontSize="15px"
+                    />
+                  ))}
+                  <ChartTooltip
+                    rows={(point) => {
+                      const rows = tipologias
+                        .map((t, idx) => ({
+                          color: idx % 2 === 0 ? '#1B5E20' : '#A5D6A7',
+                          label: t,
+                          value: formatMoeda(point[`${t}_vgl`] ?? 0)
+                        }))
+                        .filter(row => row.value !== 'R$ 0,00' && row.value !== 0);
+                      rows.push({
+                        color: '#1B5E20',
+                        label: 'Total VGL',
+                        value: formatMoeda(point.totalVgl ?? 0)
+                      });
+                      return rows;
+                    }}
+                  />
+                </BarChart>
               </div>
             </div>
 
             <div className="chart-wrapper glass-panel">
               <h3>Ticket Médio</h3>
               <div className="bar-horizontal-container">
-                <ResponsiveBar
+                <BarChart
                   data={barDataTicket}
-                  keys={['ticketMedio']}
-                  indexBy="assistente"
-                  layout="horizontal"
-                  margin={{ top: 10, right: 80, bottom: 15, left: 140 }}
-                  padding={0.3}
-                  colors={['#FFD700']}
-                  enableLabel={false}
-                  layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', TicketLabels]}
-                  axisBottom={null}
-                  axisLeft={{
-                    tickSize: 0,
-                    tickPadding: 8
-                  }}
-                  theme={commonTheme}
-                  tooltip={({ value, indexValue }) => (
-                    <div className="chart-tooltip"><strong>{indexValue}</strong><br/>{formatMoeda(value)}</div>
-                  )}
-                />
+                  xDataKey="assistente"
+                  orientation="horizontal"
+                  margin={{ top: 10, right: 30, bottom: 20, left: 110 }}
+                  barGap={0.35}
+                  aspectRatio="auto"
+                >
+                  <Grid vertical={false} horizontal={false} />
+                  <BarYAxis fontSize="14px" />
+                  <Bar
+                    dataKey="ticketMedio"
+                    fill="#FFD700"
+                    showValues={true}
+                    valueFormatter={formatMoeda}
+                    valueFontSize="14px"
+                  />
+                  <ChartTooltip
+                    rows={(point) => [
+                      {
+                        color: '#FFD700',
+                        label: 'Ticket Médio',
+                        value: formatMoeda(point.ticketMedio ?? 0)
+                      }
+                    ]}
+                  />
+                </BarChart>
               </div>
             </div>
           </div>
 
           <div className="chart-wrapper glass-panel full-width">
             <h3>Evolução de Locações e VGL</h3>
-            <div className="line-chart-container">
-              <ResponsiveLine
-                data={lineVglData}
-                margin={{ top: 20, right: 20, bottom: 50, left: 80 }}
-                xScale={{ type: 'point' }}
-                yScale={{ type: 'linear', min: 'auto', max: 'auto', stacked: false }}
-                axisBottom={{ tickRotation: -45 }}
-                axisLeft={{ format: v => `R$ ${(v/1000).toFixed(0)}k` }}
-                colors={{ datum: 'color' }}
-                pointSize={10}
-                pointColor={{ theme: 'background' }}
-                pointBorderWidth={2}
-                pointBorderColor={{ from: 'serieColor' }}
-                enableArea={true}
-                areaOpacity={0.15}
-                useMesh={true}
-                theme={commonTheme}
-                tooltip={({ point }) => (
-                  <div className="chart-tooltip">
-                    <strong>{point.data.xFormatted}</strong><br/>
-                    {point.serieId}: {formatMoeda(point.data.yFormatted)}
-                  </div>
-                )}
-              />
+            <div className="line-chart-container" style={{ height: '380px', width: '100%' }}>
+              {subframeVgl.data.length > 0 ? (
+                <AreaChart
+                  data={subframeVgl.data}
+                  index="mes"
+                  categories={subframeVgl.categories}
+                  colors={['#a855f7', '#7c3aed']}
+                />
+              ) : (
+                <div style={{ color: '#94a3b8', textAlign: 'center', paddingTop: '80px' }}>Sem dados no período.</div>
+              )}
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

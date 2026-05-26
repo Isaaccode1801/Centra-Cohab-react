@@ -78,8 +78,20 @@
 }
 
 .bar-chart-container {
-  height: 350px;
+  height: 350px !important;
 }
+
+/* Recharts ChartContainer override – fill the parent bar-chart-container */
+.rfm-recharts-container {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.rfm-recharts-container .recharts-surface {
+  outline: none;
+}
+
 
 .list-header {
   display: flex;

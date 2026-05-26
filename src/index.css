@@ -397,3 +397,70 @@ button {
   color: var(--accent-1);
   flex-shrink: 0;
 }
+
+/* Glass Radio Group Component */
+.glass-radio-group {
+  --bg: rgba(255, 255, 255, 0.04);
+  --text: #888888;
+  --accent-color: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.2));
+  --accent-glow: rgba(255, 255, 255, 0.1);
+
+  display: flex;
+  position: relative;
+  background: var(--bg);
+  border-radius: 1rem;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    inset 1px 1px 4px rgba(255, 255, 255, 0.05),
+    inset -1px -1px 6px rgba(0, 0, 0, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  overflow: hidden;
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-radio-group input {
+  display: none;
+}
+
+.glass-radio-group label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  font-size: 13px;
+  padding: 0.6rem 1.4rem;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text);
+  position: relative;
+  z-index: 2;
+  transition: color 0.3s ease-in-out;
+}
+
+.glass-radio-group label:hover {
+  color: white;
+}
+
+.glass-radio-group input:checked + label {
+  color: #fff;
+}
+
+.glass-glider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: calc((100% - 8px) / 4);
+  border-radius: 0.75rem;
+  z-index: 1;
+  background: var(--accent-color);
+  box-shadow:
+    0 0 15px var(--accent-glow),
+    inset 0 0 8px rgba(255, 255, 255, 0.2);
+  transition:
+    transform 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+}

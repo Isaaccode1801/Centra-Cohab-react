@@ -3,25 +3,26 @@ import { NavLink } from 'react-router-dom';
 import {
   Home, Users, Target, Activity, FileText, CheckCircle,
   Map, LayoutDashboard, FileX, CalendarDays, TrendingUp,
-  ChevronLeft, ChevronRight, LogOut
+  ChevronLeft, ChevronRight, LogOut, Grid3X3, Rocket, Handshake, Magnet
 } from 'lucide-react';
+import { ParetoIcon } from './ParetoIcon';
 import { useAuth } from '../contexts/AuthContext';
 import logoImg from '../assets/performance logo horizontal (1).png';
 import './Sidebar.css';
 
 const navItems = [
   { path: '/', label: 'Central Cohab', icon: Home },
-  { path: '/pareto-proprietarios', label: 'Pareto Proprietários', icon: Users },
-  { path: '/pareto-inquilinos', label: 'Pareto Inquilinos', icon: Users },
-  { path: '/cohort', label: 'Análise de Cohort', icon: Target },
-  { path: '/rfm-inquilinos', label: 'RFM Inquilinos', icon: Activity },
+  { path: '/pareto-proprietarios', label: 'Pareto Proprietários', icon: ParetoIcon },
+  { path: '/pareto-inquilinos', label: 'Pareto Inquilinos', icon: ParetoIcon },
+  { path: '/cohort', label: 'Análise de Cohort', icon: Grid3X3 },
+  { path: '/rfm-inquilinos', label: 'RFM Inquilinos', icon: LayoutDashboard },
   { path: '/locacoes', label: 'Locações', icon: Map },
-  { path: '/captacao', label: 'Captação', icon: LayoutDashboard },
+  { path: '/captacao', label: 'Captação', icon: Magnet },
   { path: '/contratos-rescisao', label: 'Contratos Rescisão', icon: FileX },
-  { path: '/contratos-renovacao', label: 'Contratos Renovação', icon: CalendarDays },
+  { path: '/contratos-renovacao', label: 'Contratos Renovação', icon: Handshake },
   { path: '/contratos-ativos', label: 'Contratos Ativos', icon: FileText },
-  { path: '/indicadores-principais', label: 'Indicadores Principais', icon: CheckCircle },
-  { path: '/metometro', label: 'Metômetro', icon: TrendingUp },
+  { path: '/indicadores-principais', label: 'Indicadores Principais', icon: Target },
+  { path: '/metometro', label: 'Metômetro', icon: Rocket },
 ];
 
 export const Sidebar = ({ collapsed, onToggle }) => {

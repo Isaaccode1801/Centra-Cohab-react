@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ResponsivePie } from '@nivo/pie';
 import { CheckCircle2 } from 'lucide-react';
+import { ParentSize } from '@visx/responsive';
+import { DoubleDonutChart } from '../components/DoubleDonutChart';
 
 export const ContratosAtivos = () => {
   const { api } = useAuth();
@@ -80,64 +82,50 @@ export const ContratosAtivos = () => {
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : (
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="metrics-row">
             <div className="metric-card glass-panel">
               <span className="metric-label">Contratos Ativos</span>
-              <span className="metric-value">{formatMilhar(contratosQtd)}</span>
+              <span className="metric-value" style={{ color: '#60a5fa', textShadow: '0 0 10px rgba(96, 165, 250, 0.4)' }}>{formatMilhar(contratosQtd)}</span>
             </div>
-            <div className="metric-card glass-panel">
-              <span className="metric-label">VGL Ativo</span>
-              <span className="metric-value highlight">{formatMoeda(vglTotal)}</span>
+            <div className="metric-card glass-panel" style={{ border: '1px solid rgba(59, 130, 246, 0.4)', boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 15px rgba(59, 130, 246, 0.1)', background: 'linear-gradient(135deg, rgba(0, 0, 30, 0.6) 0%, rgba(0, 0, 10, 0.8) 100%)' }}>
+              <span className="metric-label" style={{ color: '#bfdbfe' }}>VGL Ativo</span>
+              <span className="metric-value" style={{ color: '#3b82f6', textShadow: '0 0 15px rgba(59, 130, 246, 0.9), 0 0 30px rgba(59, 130, 246, 0.5)', background: 'linear-gradient(to right, #60a5fa, #bfdbfe)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', fontWeight: '800' }}>{formatMoeda(vglTotal)}</span>
             </div>
             <div className="metric-card glass-panel">
               <span className="metric-label">Ticket Médio</span>
-              <span className="metric-value">{formatMoeda(ticketMedio)}</span>
+              <span className="metric-value" style={{ color: '#93c5fd', textShadow: '0 0 10px rgba(147, 197, 253, 0.3)' }}>{formatMoeda(ticketMedio)}</span>
             </div>
           </div>
 
-          <div className="charts-grid-2">
+          <div className="charts-grid-2" style={{ gridTemplateColumns: '1fr' }}>
             <div className="chart-wrapper glass-panel">
-              <h3>Distribuição por Tipologia (Qtd)</h3>
+              <h3>Distribuição por Tipologia (Qtd externa, VGL interno)</h3>
               <div className="pie-container">
-                <ResponsivePie
-                  data={pieDataQtd}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  innerRadius={0.6}
-                  padAngle={1}
-                  cornerRadius={4}
-                  colors={['#0ea5e9', '#38bdf8', '#7dd3fc']}
-                  borderWidth={1}
-                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                  arcLinkLabelsTextColor="var(--text-primary)"
-                  arcLabelsTextColor="#fff"
-                  theme={commonTheme}
-                  valueFormat={v => formatMilhar(v)}
-                />
-              </div>
-            </div>
-            
-            <div className="chart-wrapper glass-panel">
-              <h3>Distribuição por Tipologia (VGL)</h3>
-              <div className="pie-container">
-                <ResponsivePie
-                  data={pieDataVgl}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  innerRadius={0.6}
-                  padAngle={1}
-                  cornerRadius={4}
-                  colors={['#0284c7', '#0369a1', '#075985']}
-                  borderWidth={1}
-                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                  arcLinkLabelsTextColor="var(--text-primary)"
-                  arcLabelsTextColor="#fff"
-                  theme={commonTheme}
-                  valueFormat={v => formatMoeda(v)}
-                />
+                <ParentSize>
+                  {({ width, height }) => (
+                    <DoubleDonutChart
+                      width={width}
+                      height={height}
+                      outerData={pieDataQtd}
+                      innerData={pieDataVgl}
+                      formatOuterLabel={(v, isExpanded) => isExpanded ? formatMilhar(v) : formatMilhar(v)}
+                      formatInnerLabel={(v, isExpanded) => {
+                        const n = Number(v);
+                        if (isExpanded) return formatMoeda(n);
+                        if (n >= 1000000) return `${(n/1000000).toFixed(1).replace('.',',')} M`;
+                        if (n >= 1000) return `${(n/1000).toFixed(1).replace('.',',')} K`;
+                        return formatMilhar(n);
+                      }}
+                      outerColorRange={['#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af']}
+                      innerColorRange={['#172554', '#1e3a8a', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd']}
+                    />
+                  )}
+                </ParentSize>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

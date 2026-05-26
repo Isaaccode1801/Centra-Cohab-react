@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ResponsivePie } from '@nivo/pie';
-import { ResponsiveBar } from '@nivo/bar';
-import { ResponsiveLine } from '@nivo/line';
 import { FileX } from 'lucide-react';
+import { ParentSize } from '@visx/responsive';
+import { DoubleDonutChart } from "../components/DoubleDonutChart";
+import { BarChart, Bar, BarYAxis, Grid, ChartTooltip } from "../components/BarChart";
+import { AreaChart } from '../components/ui/AreaChart';
 
 const QtdLabels = ({ bars }) => {
   return bars.map(bar => {
@@ -127,8 +129,8 @@ export const ContratosRescisao = () => {
     } else if (filtroPeriodo === 'Este ano') {
       inicio = new Date(hoje.getFullYear(), 0, 1);
     } else {
-      inicio = new Date(dataInicial);
-      fim = new Date(dataFinal);
+      inicio = new Date(dataInicial + 'T00:00:00');
+      fim = new Date(dataFinal + 'T23:59:59');
     }
     return { inicio, fim };
   };
@@ -201,6 +203,16 @@ export const ContratosRescisao = () => {
     }
   ];
 
+  const subframeRescisoes = mensalArray.length > 0 ? {
+    data: mensalArray.map(m => ({ mes: m.mesAno, 'Rescisões': m.rescisoes })),
+    categories: ['Rescisões']
+  } : { data: [], categories: [] };
+
+  const subframeVglRescisao = mensalArray.length > 0 ? {
+    data: mensalArray.map(m => ({ mes: m.mesAno, 'VGL Rescindido': m.vgl })),
+    categories: ['VGL Rescindido']
+  } : { data: [], categories: [] };
+
   const commonTheme = {
     axis: {
       ticks: { text: { fill: '#ffffff', fontSize: 11, fontWeight: 600 } },
@@ -218,19 +230,26 @@ export const ContratosRescisao = () => {
       </header>
 
       <div className="filter-section glass-panel">
-        <div className="filter-options">
-          {['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].map(opcao => (
-            <label key={opcao} className="radio-label">
+        <div className="glass-radio-group" style={{
+          '--accent-color': 'linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.8))',
+          '--accent-glow': 'rgba(239, 68, 68, 0.5)'
+        }}>
+          {['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].map((opcao, idx) => (
+            <React.Fragment key={opcao}>
               <input
                 type="radio"
                 name="filtroPeriodo"
+                id={`periodo-rescisao-${idx}`}
                 value={opcao}
                 checked={filtroPeriodo === opcao}
                 onChange={(e) => setFiltroPeriodo(e.target.value)}
               />
-              {opcao}
-            </label>
+              <label htmlFor={`periodo-rescisao-${idx}`}>{opcao}</label>
+            </React.Fragment>
           ))}
+          <div className="glass-glider" style={{
+            transform: `translateX(${['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].indexOf(filtroPeriodo) * 100}%)`
+          }} />
         </div>
         {filtroPeriodo === 'Personalizado' && (
           <div className="custom-date-filters">
@@ -246,60 +265,46 @@ export const ContratosRescisao = () => {
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : (
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="metrics-row">
             <div className="metric-card glass-panel">
               <span className="metric-label">Rescisões</span>
-              <span className="metric-value">{formatMilhar(rescisoesQtd)}</span>
+              <span className="metric-value" style={{ color: '#ff4d4d', textShadow: '0 0 10px rgba(255, 77, 77, 0.4)' }}>{formatMilhar(rescisoesQtd)}</span>
             </div>
-            <div className="metric-card glass-panel">
-              <span className="metric-label">VGL Perdido</span>
-              <span className="metric-value danger-text" style={{ color: '#f87171' }}>{formatMoeda(vglTotal)}</span>
+            <div className="metric-card glass-panel" style={{ border: '1px solid rgba(239, 68, 68, 0.4)', boxShadow: '0 0 20px rgba(239, 68, 68, 0.15), inset 0 0 15px rgba(239, 68, 68, 0.1)', background: 'linear-gradient(135deg, rgba(30, 0, 0, 0.6) 0%, rgba(10, 0, 0, 0.8) 100%)' }}>
+              <span className="metric-label" style={{ color: '#ff9999' }}>VGL Perdido</span>
+              <span className="metric-value" style={{ color: '#ff3b30', textShadow: '0 0 15px rgba(255, 59, 48, 0.9), 0 0 30px rgba(255, 59, 48, 0.5)', background: 'linear-gradient(to right, #ff3333, #ff8080)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', fontWeight: '800' }}>{formatMoeda(vglTotal)}</span>
             </div>
             <div className="metric-card glass-panel">
               <span className="metric-label">Ticket Médio</span>
-              <span className="metric-value">{formatMoeda(ticketMedio)}</span>
+              <span className="metric-value" style={{ color: '#ff6666', textShadow: '0 0 10px rgba(255, 102, 102, 0.3)' }}>{formatMoeda(ticketMedio)}</span>
             </div>
           </div>
 
-          <div className="charts-grid-2">
+          <div className="charts-grid-2" style={{ gridTemplateColumns: '1fr' }}>
             <div className="chart-wrapper glass-panel">
-              <h3>Quantidade por Tipologia</h3>
+              <h3>Quantidade e VGL Perdido por Tipologia (Qtd externa, VGL interno)</h3>
               <div className="pie-container">
-                <ResponsivePie
-                  data={pieDataQtd}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  innerRadius={0.6}
-                  padAngle={1}
-                  cornerRadius={4}
-                  colors={['#c0392b', '#e74c3c', '#d35400']}
-                  borderWidth={1}
-                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                  arcLinkLabelsTextColor="var(--text-primary)"
-                  arcLabelsTextColor="#fff"
-                  theme={commonTheme}
-                  valueFormat={v => formatMilhar(v)}
-                />
-              </div>
-            </div>
-
-            <div className="chart-wrapper glass-panel">
-              <h3>VGL Perdido por Tipologia</h3>
-              <div className="pie-container">
-                <ResponsivePie
-                  data={pieDataVgl}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  innerRadius={0.6}
-                  padAngle={1}
-                  cornerRadius={4}
-                  colors={['#e74c3c', '#e67e22', '#f39c12']}
-                  borderWidth={1}
-                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                  arcLinkLabelsTextColor="var(--text-primary)"
-                  arcLabelsTextColor="#fff"
-                  theme={commonTheme}
-                  valueFormat={v => formatMoeda(v)}
-                />
+                <ParentSize>
+                  {({ width, height }) => (
+                    <DoubleDonutChart
+                      width={width}
+                      height={height}
+                      outerData={pieDataQtd}
+                      innerData={pieDataVgl}
+                      formatOuterLabel={(v, isExpanded) => isExpanded ? formatMilhar(v) : formatMilhar(v)}
+                      formatInnerLabel={(v, isExpanded) => {
+                        const n = Number(v);
+                        if (isExpanded) return formatMoeda(n);
+                        if (n >= 1000000) return `${(n/1000000).toFixed(1).replace('.',',')} M`;
+                        if (n >= 1000) return `${(n/1000).toFixed(1).replace('.',',')} K`;
+                        return formatMilhar(n);
+                      }}
+                      outerColorRange={['#ffa4a2', '#ff867f', '#ff5252', '#ff1744', '#d50000', '#c62828', '#b71c1c']}
+                      innerColorRange={['#300000', '#5a0000', '#800000', '#a80000', '#d00000', '#f83030', '#ff7070']}
+                    />
+                  )}
+                </ParentSize>
               </div>
             </div>
           </div>
@@ -308,52 +313,64 @@ export const ContratosRescisao = () => {
             <div className="chart-wrapper glass-panel">
               <h3>Top 10 Motivos (Qtd)</h3>
               <div className="bar-horizontal-container">
-                <ResponsiveBar
+                <BarChart
                   data={barDataMotivosQtd}
-                  keys={['qtd']}
-                  indexBy="id"
-                  layout="horizontal"
-                  margin={{ top: 10, right: 70, bottom: 15, left: 200 }}
-                  padding={0.3}
-                  colors={['#c0392b']}
-                  enableLabel={false}
-                  layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', QtdLabels]}
-                  axisBottom={null}
-                  axisLeft={{
-                    tickSize: 0,
-                    tickPadding: 8
-                  }}
-                  theme={commonTheme}
-                  tooltip={({ id, value, indexValue }) => (
-                    <div className="chart-tooltip"><strong>{indexValue}</strong><br />{formatMilhar(value)} rescisões</div>
-                  )}
-                />
+                  xDataKey="id"
+                  orientation="horizontal"
+                  margin={{ top: 10, right: 60, bottom: 20, left: 250 }}
+                  barGap={0.35}
+                >
+                  <Grid vertical={false} horizontal={false} />
+                  <BarYAxis fontSize="14px" />
+                  <Bar 
+                    dataKey="qtd" 
+                    fill="#c0392b" 
+                    showValues={true}
+                    valueFormatter={(v) => formatMilhar(v)}
+                    valueFontSize="15px"
+                  />
+                  <ChartTooltip
+                    rows={(point) => [
+                      {
+                        color: '#c0392b',
+                        label: 'Rescisões',
+                        value: formatMilhar(point.qtd)
+                      }
+                    ]}
+                  />
+                </BarChart>
               </div>
             </div>
 
             <div className="chart-wrapper glass-panel">
               <h3>Top 10 Motivos (VGL)</h3>
               <div className="bar-horizontal-container">
-                <ResponsiveBar
+                <BarChart
                   data={barDataMotivosVgl}
-                  keys={['vgl']}
-                  indexBy="id"
-                  layout="horizontal"
-                  margin={{ top: 10, right: 70, bottom: 15, left: 200 }}
-                  padding={0.3}
-                  colors={['#e74c3c']}
-                  enableLabel={false}
-                  layers={['grid', 'axes', 'bars', 'markers', 'legends', 'annotations', VglRescisaoLabels]}
-                  axisBottom={null}
-                  axisLeft={{
-                    tickSize: 0,
-                    tickPadding: 8
-                  }}
-                  theme={commonTheme}
-                  tooltip={({ value, indexValue }) => (
-                    <div className="chart-tooltip"><strong>{indexValue}</strong><br />{formatMoeda(value)}</div>
-                  )}
-                />
+                  xDataKey="id"
+                  orientation="horizontal"
+                  margin={{ top: 10, right: 60, bottom: 20, left: 250 }}
+                  barGap={0.35}
+                >
+                  <Grid vertical={false} horizontal={false} />
+                  <BarYAxis fontSize="14px" />
+                  <Bar 
+                    dataKey="vgl" 
+                    fill="#e74c3c" 
+                    showValues={true}
+                    valueFormatter={(v) => formatMoeda(v)}
+                    valueFontSize="15px"
+                  />
+                  <ChartTooltip
+                    rows={(point) => [
+                      {
+                        color: '#e74c3c',
+                        label: 'VGL Perdido',
+                        value: formatMoeda(point.vgl)
+                      }
+                    ]}
+                  />
+                </BarChart>
               </div>
             </div>
           </div>
@@ -361,62 +378,37 @@ export const ContratosRescisao = () => {
           <div className="charts-grid-2">
             <div className="chart-wrapper glass-panel">
               <h3>Evolução de Rescisões</h3>
-              <div className="line-chart-container">
-                <ResponsiveLine
-                  data={lineRescisoesData}
-                  margin={{ top: 20, right: 20, bottom: 50, left: 50 }}
-                  xScale={{ type: 'point' }}
-                  yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-                  axisBottom={{ tickRotation: -45 }}
-                  colors={{ datum: 'color' }}
-                  pointSize={8}
-                  pointColor={{ theme: 'background' }}
-                  pointBorderWidth={2}
-                  pointBorderColor={{ from: 'serieColor' }}
-                  enableArea={true}
-                  areaOpacity={0.15}
-                  useMesh={true}
-                  theme={commonTheme}
-                  tooltip={({ point }) => (
-                    <div className="chart-tooltip">
-                      <strong>{point.data.xFormatted}</strong><br />
-                      {point.serieId}: {point.data.yFormatted}
-                    </div>
-                  )}
-                />
+              <div className="line-chart-container" style={{ height: '380px', width: '100%' }}>
+                {subframeRescisoes.data.length > 0 ? (
+                  <AreaChart
+                    data={subframeRescisoes.data}
+                    index="mes"
+                    categories={subframeRescisoes.categories}
+                    colors={['#ef4444', '#f87171']}
+                  />
+                ) : (
+                  <div style={{ color: '#94a3b8', textAlign: 'center', paddingTop: '80px' }}>Sem dados no período.</div>
+                )}
               </div>
             </div>
 
             <div className="chart-wrapper glass-panel">
               <h3>Evolução do VGL Perdido</h3>
-              <div className="line-chart-container">
-                <ResponsiveLine
-                  data={lineVglData}
-                  margin={{ top: 20, right: 20, bottom: 50, left: 80 }}
-                  xScale={{ type: 'point' }}
-                  yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-                  axisBottom={{ tickRotation: -45 }}
-                  axisLeft={{ format: v => `R$ ${(v / 1000).toFixed(0)}k` }}
-                  colors={{ datum: 'color' }}
-                  pointSize={8}
-                  pointColor={{ theme: 'background' }}
-                  pointBorderWidth={2}
-                  pointBorderColor={{ from: 'serieColor' }}
-                  enableArea={true}
-                  areaOpacity={0.15}
-                  useMesh={true}
-                  theme={commonTheme}
-                  tooltip={({ point }) => (
-                    <div className="chart-tooltip">
-                      <strong>{point.data.xFormatted}</strong><br />
-                      {point.serieId}: {formatMoeda(point.data.yFormatted)}
-                    </div>
-                  )}
-                />
+              <div className="line-chart-container" style={{ height: '380px', width: '100%' }}>
+                {subframeVglRescisao.data.length > 0 ? (
+                  <AreaChart
+                    data={subframeVglRescisao.data}
+                    index="mes"
+                    categories={subframeVglRescisao.categories}
+                    colors={['#dc2626', '#991b1b']}
+                  />
+                ) : (
+                  <div style={{ color: '#94a3b8', textAlign: 'center', paddingTop: '80px' }}>Sem dados no período.</div>
+                )}
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

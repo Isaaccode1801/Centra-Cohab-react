@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ResponsivePie } from '@nivo/pie';
-import { ResponsiveLine } from '@nivo/line';
 import { Handshake } from 'lucide-react';
+import { ParentSize } from '@visx/responsive';
+import { DoubleDonutChart } from '../components/DoubleDonutChart';
+import { AreaChart } from '../components/ui/AreaChart';
 
 export const ContratosRenovacao = () => {
   const { api } = useAuth();
@@ -76,8 +78,8 @@ export const ContratosRenovacao = () => {
     } else if (filtroPeriodo === 'Este ano') {
       inicio = new Date(hoje.getFullYear(), 0, 1);
     } else {
-      inicio = new Date(dataInicial);
-      fim = new Date(dataFinal);
+      inicio = new Date(dataInicial + 'T00:00:00');
+      fim = new Date(dataFinal + 'T23:59:59');
     }
     return { inicio, fim };
   };
@@ -137,6 +139,16 @@ export const ContratosRenovacao = () => {
       data: mensalArray.map(m => ({ x: m.mesAno, y: m.renovacoes }))
     }
   ];
+
+  const subframeRenovacoes = mensalArray.length > 0 ? {
+    data: mensalArray.map(m => ({ mes: m.mesAno, 'Renovações': m.renovacoes })),
+    categories: ['Renovações']
+  } : { data: [], categories: [] };
+
+  const subframeVgl = mensalArray.length > 0 ? {
+    data: mensalArray.map(m => ({ mes: m.mesAno, 'VGL Renovado': m.vgl })),
+    categories: ['VGL Renovado']
+  } : { data: [], categories: [] };
   
   const commonTheme = {
     axis: {
@@ -155,19 +167,26 @@ export const ContratosRenovacao = () => {
       </header>
 
       <div className="filter-section glass-panel">
-        <div className="filter-options">
-          {['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].map(opcao => (
-            <label key={opcao} className="radio-label">
+        <div className="glass-radio-group" style={{
+          '--accent-color': 'linear-gradient(135deg, rgba(34, 197, 94, 0.4), rgba(34, 197, 94, 0.8))',
+          '--accent-glow': 'rgba(34, 197, 94, 0.5)'
+        }}>
+          {['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].map((opcao, idx) => (
+            <React.Fragment key={opcao}>
               <input 
                 type="radio" 
                 name="filtroPeriodo" 
+                id={`periodo-renovacao-${idx}`}
                 value={opcao} 
                 checked={filtroPeriodo === opcao}
                 onChange={(e) => setFiltroPeriodo(e.target.value)} 
               />
-              {opcao}
-            </label>
+              <label htmlFor={`periodo-renovacao-${idx}`}>{opcao}</label>
+            </React.Fragment>
           ))}
+          <div className="glass-glider" style={{
+            transform: `translateX(${['Este mês', 'Este Trimestre', 'Este ano', 'Personalizado'].indexOf(filtroPeriodo) * 100}%)`
+          }} />
         </div>
         {filtroPeriodo === 'Personalizado' && (
           <div className="custom-date-filters">
@@ -183,60 +202,46 @@ export const ContratosRenovacao = () => {
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : (
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="metrics-row">
             <div className="metric-card glass-panel">
               <span className="metric-label">Renovações</span>
-              <span className="metric-value">{formatMilhar(renovacoesQtd)}</span>
+              <span className="metric-value" style={{ color: '#4ade80', textShadow: '0 0 10px rgba(74, 222, 128, 0.4)' }}>{formatMilhar(renovacoesQtd)}</span>
             </div>
-            <div className="metric-card glass-panel">
-              <span className="metric-label">VGL Renovado</span>
-              <span className="metric-value success-text" style={{ color: '#4ade80' }}>{formatMoeda(vglTotal)}</span>
+            <div className="metric-card glass-panel" style={{ border: '1px solid rgba(34, 197, 94, 0.4)', boxShadow: '0 0 20px rgba(34, 197, 94, 0.15), inset 0 0 15px rgba(34, 197, 94, 0.1)', background: 'linear-gradient(135deg, rgba(0, 20, 0, 0.6) 0%, rgba(0, 5, 0, 0.8) 100%)' }}>
+              <span className="metric-label" style={{ color: '#a7f3d0' }}>VGL Renovado</span>
+              <span className="metric-value" style={{ color: '#22c55e', textShadow: '0 0 15px rgba(34, 197, 94, 0.9), 0 0 30px rgba(34, 197, 94, 0.5)', background: 'linear-gradient(to right, #4ade80, #a7f3d0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', fontWeight: '800' }}>{formatMoeda(vglTotal)}</span>
             </div>
             <div className="metric-card glass-panel">
               <span className="metric-label">Ticket Médio</span>
-              <span className="metric-value">{formatMoeda(ticketMedio)}</span>
+              <span className="metric-value" style={{ color: '#34d399', textShadow: '0 0 10px rgba(52, 211, 153, 0.3)' }}>{formatMoeda(ticketMedio)}</span>
             </div>
           </div>
 
-          <div className="charts-grid-2">
+          <div className="charts-grid-2" style={{ gridTemplateColumns: '1fr' }}>
             <div className="chart-wrapper glass-panel">
-              <h3>Quantidade por Tipologia</h3>
+              <h3>Quantidade e VGL Renovado por Tipologia (Qtd externa, VGL interno)</h3>
               <div className="pie-container">
-                <ResponsivePie
-                  data={pieDataQtd}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  innerRadius={0.6}
-                  padAngle={1}
-                  cornerRadius={4}
-                  colors={['#27ae60', '#2ecc71', '#f1c40f']}
-                  borderWidth={1}
-                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                  arcLinkLabelsTextColor="var(--text-primary)"
-                  arcLabelsTextColor="#fff"
-                  theme={commonTheme}
-                  valueFormat={v => formatMilhar(v)}
-                />
-              </div>
-            </div>
-            
-            <div className="chart-wrapper glass-panel">
-              <h3>VGL Renovado por Tipologia</h3>
-              <div className="pie-container">
-                <ResponsivePie
-                  data={pieDataVgl}
-                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  innerRadius={0.6}
-                  padAngle={1}
-                  cornerRadius={4}
-                  colors={['#2ecc71', '#f1c40f', '#f39c12']}
-                  borderWidth={1}
-                  borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                  arcLinkLabelsTextColor="var(--text-primary)"
-                  arcLabelsTextColor="#fff"
-                  theme={commonTheme}
-                  valueFormat={v => formatMoeda(v)}
-                />
+                <ParentSize>
+                  {({ width, height }) => (
+                    <DoubleDonutChart
+                      width={width}
+                      height={height}
+                      outerData={pieDataQtd}
+                      innerData={pieDataVgl}
+                      formatOuterLabel={(v, isExpanded) => isExpanded ? formatMilhar(v) : formatMilhar(v)}
+                      formatInnerLabel={(v, isExpanded) => {
+                        const n = Number(v);
+                        if (isExpanded) return formatMoeda(n);
+                        if (n >= 1000000) return `${(n/1000000).toFixed(1).replace('.',',')} M`;
+                        if (n >= 1000) return `${(n/1000).toFixed(1).replace('.',',')} K`;
+                        return formatMilhar(n);
+                      }}
+                      outerColorRange={['#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857', '#065f46']}
+                      innerColorRange={['#022c22', '#064e3b', '#065f46', '#047857', '#059669', '#10b981', '#34d399']}
+                    />
+                  )}
+                </ParentSize>
               </div>
             </div>
           </div>
@@ -244,62 +249,37 @@ export const ContratosRenovacao = () => {
           <div className="charts-grid-2">
             <div className="chart-wrapper glass-panel">
               <h3>Evolução de Renovações</h3>
-              <div className="line-chart-container">
-                <ResponsiveLine
-                  data={lineRenovacoesData}
-                  margin={{ top: 20, right: 20, bottom: 50, left: 50 }}
-                  xScale={{ type: 'point' }}
-                  yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-                  axisBottom={{ tickRotation: -45 }}
-                  colors={{ datum: 'color' }}
-                  pointSize={8}
-                  pointColor={{ theme: 'background' }}
-                  pointBorderWidth={2}
-                  pointBorderColor={{ from: 'serieColor' }}
-                  enableArea={true}
-                  areaOpacity={0.15}
-                  useMesh={true}
-                  theme={commonTheme}
-                  tooltip={({ point }) => (
-                    <div className="chart-tooltip">
-                      <strong>{point.data.xFormatted}</strong><br/>
-                      {point.serieId}: {point.data.yFormatted}
-                    </div>
-                  )}
-                />
+              <div className="line-chart-container" style={{ height: '380px', width: '100%' }}>
+                {subframeRenovacoes.data.length > 0 ? (
+                  <AreaChart
+                    data={subframeRenovacoes.data}
+                    index="mes"
+                    categories={subframeRenovacoes.categories}
+                    colors={['#10b981', '#34d399']}
+                  />
+                ) : (
+                  <div style={{ color: '#94a3b8', textAlign: 'center', paddingTop: '80px' }}>Sem dados no período.</div>
+                )}
               </div>
             </div>
 
             <div className="chart-wrapper glass-panel">
               <h3>Evolução do VGL Renovado</h3>
-              <div className="line-chart-container">
-                <ResponsiveLine
-                  data={lineVglData}
-                  margin={{ top: 20, right: 20, bottom: 50, left: 80 }}
-                  xScale={{ type: 'point' }}
-                  yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-                  axisBottom={{ tickRotation: -45 }}
-                  axisLeft={{ format: v => `R$ ${(v/1000).toFixed(0)}k` }}
-                  colors={{ datum: 'color' }}
-                  pointSize={8}
-                  pointColor={{ theme: 'background' }}
-                  pointBorderWidth={2}
-                  pointBorderColor={{ from: 'serieColor' }}
-                  enableArea={true}
-                  areaOpacity={0.15}
-                  useMesh={true}
-                  theme={commonTheme}
-                  tooltip={({ point }) => (
-                    <div className="chart-tooltip">
-                      <strong>{point.data.xFormatted}</strong><br/>
-                      {point.serieId}: {formatMoeda(point.data.yFormatted)}
-                    </div>
-                  )}
-                />
+              <div className="line-chart-container" style={{ height: '380px', width: '100%' }}>
+                {subframeVgl.data.length > 0 ? (
+                  <AreaChart
+                    data={subframeVgl.data}
+                    index="mes"
+                    categories={subframeVgl.categories}
+                    colors={['#059669', '#065f46']}
+                  />
+                ) : (
+                  <div style={{ color: '#94a3b8', textAlign: 'center', paddingTop: '80px' }}>Sem dados no período.</div>
+                )}
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
