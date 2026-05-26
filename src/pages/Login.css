@@ -1,0 +1,193 @@
+.login-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 400px;
+  /* Reduzido de 440px para 400px para ficar mais compacto */
+  padding: 32px;
+  /* Reduzido de 48px para 32px para diminuir os espaçamentos das bordas */
+  text-align: center;
+  position: relative;
+  z-index: 10;
+}
+
+.login-title {
+  font-size: 1.8rem;
+  /* Reduzido sutilmente de 2rem para equilibrar o layout */
+  font-weight: 700;
+  margin-bottom: 12px;
+  /* Reduzido de 16px para 12px */
+}
+
+.login-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+  /* Reduzido de 32px para 24px para aproximar do input */
+  line-height: 1.5;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Reduzido de 24px para 16px para aproximar o input do botão */
+}
+
+.input-group {
+  position: relative;
+  width: 100%;
+}
+
+.login-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  padding: 16px 50px 16px 20px;
+  /* adicione mais padding a direita para o botão */
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.login-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.password-toggle-btn:hover {
+  color: var(--accent-1);
+}
+
+.login-submit-btn {
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  color: white;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all var(--transition-normal);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--accent-glow);
+}
+
+.login-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.error-message {
+  color: #ff4d4d;
+  background: rgba(255, 77, 77, 0.1);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+/* Orbs */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--accent-2);
+  top: -100px;
+  right: -100px;
+  /* animation removida se quiser deixá-las estáticas, ou mantenha se o foco for só na logo */
+}
+
+.orb-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--accent-1);
+  bottom: -50px;
+  left: -50px;
+  /* animation removida */
+}
+
+@keyframes float {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(30px, 50px);
+  }
+}
+
+.login-logo-container {
+  margin-top: -192;
+  margin-bottom: -122px;
+  /* Reduzido de 24px para 12px para aproximar do título */
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.login-logo-img {
+  max-height: 340px;
+  /* Reduzido de 226px para 140px para eliminar o espaço vazio gerado pela proporção */
+  width: auto;
+  object-fit: contain;
+
+  /* Brilho removido ou deixado bem sutil. Se quiser tirar COMPLETAMENTE o brilho azul de trás dela, remova a linha abaixo: */
+  filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.3));
+
+  transition: all var(--transition-normal);
+}
+
+@keyframes pulseGlow {
+  0% {
+    filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.75)) drop-shadow(0 0 6px rgba(0, 240, 255, 0.35)) brightness(1);
+    transform: scale(1);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 32px rgba(0, 240, 255, 1)) drop-shadow(0 0 14px rgba(0, 240, 255, 0.6)) brightness(1.2);
+    transform: scale(1.04);
+  }
+
+  100% {
+    filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.75)) drop-shadow(0 0 6px rgba(0, 240, 255, 0.35)) brightness(1);
+    transform: scale(1);
+  }
+}
+
+.animate-pulse-glow {
+  animation: none !important;
+}

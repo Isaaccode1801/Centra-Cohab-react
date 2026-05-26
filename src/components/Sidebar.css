@@ -1,0 +1,218 @@
+/* ══════════════════════════════════════
+   SIDEBAR
+   ══════════════════════════════════════ */
+
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-sidebar);
+  z-index: 100;
+  transition: width var(--transition-sidebar);
+  overflow: hidden;
+
+  /* Separação sutil da área de conteúdo — sem borda, apenas cor */
+  box-shadow: 1px 0 0 0 #111;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+/* ──────────────────────────
+   Logo / Header
+   ────────────────────────── */
+
+.sidebar-logo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  /* Controla o espaço no topo da logo */
+  margin-bottom: -95px;
+  margin-top: -55px;
+  /* Puxa o menu de abas para mais perto (ajuste o valor se precisar) */
+  width: 100%;
+  pointer-events: none; /* Allows clicks to pass through to tabs underneath */
+}
+
+.sidebar-brand-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.sidebar-logo-img {
+  max-height: 270px;
+  width: 270px;
+  object-fit: contain;
+  position: relative;
+  z-index: 0;
+  pointer-events: none; /* Allows clicks to pass through to tabs underneath */
+  transition: all var(--transition-fast);
+}
+
+.sidebar-brand {
+  font-size: 1.2rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+  text-align: center;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  justify-content: center;
+  align-items: center;
+  min-height: 64px;
+  padding: 20px 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  /* Reset margins completely to make sure button is visible */
+}
+
+.sidebar.collapsed .sidebar-brand-container {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-brand {
+  opacity: 0;
+  width: 0;
+  pointer-events: none;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  z-index: 999;
+  /* Always on top */
+}
+
+.sidebar-toggle:hover {
+  background: var(--bg-card);
+  color: var(--accent-1);
+  border-color: rgba(0, 240, 255, 0.3);
+}
+
+.sidebar.collapsed .sidebar-toggle {
+  right: 16px;
+  left: 16px;
+  /* Center-aligned in 64px width bar */
+  top: 16px;
+}
+
+/* ──────────────────────────
+   Navegação
+   ────────────────────────── */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.nav-link:hover {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+}
+
+.nav-link.active {
+  background: rgba(0, 240, 255, 0.08);
+  color: var(--accent-1);
+}
+
+.nav-icon {
+  flex-shrink: 0;
+}
+
+.nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar.collapsed .nav-label {
+  opacity: 0;
+  width: 0;
+  pointer-events: none;
+}
+
+/* centraliza ícone quando collapsed */
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 10px;
+}
+
+/* ──────────────────────────
+   Footer / Logout
+   ────────────────────────── */
+.sidebar-footer {
+  padding: 12px 8px 20px;
+  flex-shrink: 0;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 80, 80, 0.08);
+  color: #ff5555;
+}
+
+.sidebar.collapsed .logout-btn {
+  padding: 10px;
+}

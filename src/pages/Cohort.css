@@ -1,0 +1,121 @@
+.toggle-tabs {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.tab-btn {
+  padding: 10px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn.active.vacancia {
+  background: rgba(0, 153, 255, 0.2);
+  color: #66b2ff;
+  border-color: #0099ff;
+  box-shadow: 0 0 15px rgba(0, 153, 255, 0.2);
+}
+
+.tab-btn.active.vigencia {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+  border-color: #27ae60;
+  box-shadow: 0 0 15px rgba(46, 204, 113, 0.2);
+}
+
+.select-label {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.cohort-content {
+  padding: 24px;
+}
+
+.heatmap-container {
+  margin-top: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+}
+
+.heatmap-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.heatmap-table th, 
+.heatmap-table td {
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cohort-label-header {
+  background: rgba(0, 0, 0, 0.4);
+  text-align: left !important;
+  padding-left: 20px !important;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 160px;
+}
+
+.month-header {
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.9rem;
+  min-width: 70px;
+}
+
+.cohort-label-cell {
+  background: var(--bg-card);
+  text-align: left !important;
+  padding-left: 20px !important;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-right: 1px solid var(--border-color) !important;
+}
+
+.heatmap-cell {
+  position: relative;
+  transition: transform 0.1s, z-index 0.1s;
+  cursor: crosshair;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.1);
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  border-radius: 4px;
+}
+
+.cell-text {
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}

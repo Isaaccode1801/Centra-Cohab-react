@@ -1,0 +1,50 @@
+.layout-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+/* O main-content usa uma variável CSS para margem,
+   assim quando a sidebar colapsa a variável muda sozinha */
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  padding: 32px 36px;
+  transition: margin-left var(--transition-sidebar);
+  background: var(--bg-primary);
+}
+
+/* Quando a sidebar está collapsed o Layout precisa saber a largura atual.
+   Usamos um atributo data no elemento pai controlado pelo Sidebar */
+.layout-container.sidebar-collapsed .main-content {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+.content-wrapper {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* Loading screen */
+.loading-screen {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-primary);
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  border-top-color: var(--accent-1);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
